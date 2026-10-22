@@ -126,6 +126,7 @@ The `isLocal` filter matters because every client sees every avatar's hand Sende
 ## See also
 
 - [Dynamics overview](README.md)
+- [UdonSharpBehaviour → Dynamics events](../udonsharp-behaviour/dynamics-events.md)
 - [PhysBones](physbones.md): avatar hand and finger colliders double as global PhysBone colliders.
 - [Constraints](constraints.md)
 - [UdonSharpBehaviour](../udonsharp-behaviour/README.md)

@@ -58,6 +58,7 @@ In Play mode, use the left and right mouse buttons in the Game view to grab and 
 ## See also
 
 - [UdonSharpBehaviour](../udonsharp-behaviour/README.md): where event overrides live.
+- [UdonSharpBehaviour → Dynamics events](../udonsharp-behaviour/dynamics-events.md): the event overrides in one place.
 - [Persistence → Player Objects](../persistence/player-objects.md): dynamics work on `VRCPlayerObject` since 3.10.0.
 - [Networking](../networking/README.md) and [Custom network events](../networking/custom-network-events.md): dynamics state is local.
 - [GameObject Lifecycle → Instantiate](../gameobject-lifecycle/instantiate.md): instantiated PhysBones don't sync.

@@ -138,6 +138,7 @@ Every member used above is documented. The `override` form, and the `using` line
 ## See also
 
 - [Dynamics overview](README.md)
+- [UdonSharpBehaviour → Dynamics events](../udonsharp-behaviour/dynamics-events.md)
 - [Contacts](contacts.md): the hand and finger standard colliders also act as contact senders.
 - [Constraints](constraints.md)
 - [UdonSharpBehaviour](../udonsharp-behaviour/README.md)

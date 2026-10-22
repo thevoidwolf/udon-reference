@@ -5,11 +5,13 @@ A community-maintained API reference for **Udon** and **UdonSharp (U#)** — the
 This reference exists because the official VRChat documentation, while improving, is not exhaustive: many runtime APIs are undocumented, several method signatures are scattered across multiple pages, and a large portion of practical knowledge lives in community forums, Discord channels, and decompiled sources. This repo consolidates that information into one navigable specification.
 
 Each section pulls from three sources:
-1. The open-source UdonSharp runtime and editor packages.
+1. The UdonSharp runtime and editor source — bundled in the Worlds SDK at `Packages/com.vrchat.worlds/Integrations/UdonSharp/` since SDK 3.4.0.
 2. The official VRChat creator documentation.
 3. **Community projects** — open-source libraries, prefabs, analyzers, and shared knowledge from GitHub, the VRChat Wiki, VRCLibrary, the Ask forum, and Discord. See [Community Resources](docs/references/community-resources.md) for the central index.
 
 > **Status:** Work in progress. Every claim is tagged for provenance — see [Provenance tags](#provenance-tags) below.
+>
+> **Last refreshed:** October 2026, against **VRChat Worlds SDK 3.10.5** (Sep 2026) and **Unity 2022.3.22f1**. Features added after that are not covered yet — check the [release notes](https://creators.vrchat.com/releases/).
 
 ---
 
@@ -20,12 +22,12 @@ Each section pulls from three sources:
 | [Getting Started](docs/getting-started/README.md) | Concepts, installation, first U# script. |
 | [UdonSharpBehaviour](docs/udonsharp-behaviour/README.md) | Base class, lifecycle events, runtime methods, type identity. |
 | [Attributes](docs/attributes/README.md) | `[UdonSynced]`, `[UdonBehaviourSyncMode]`, `[RecursiveMethod]`, `[FieldChangeCallback]`. |
-| [Networking](docs/networking/README.md) | Sync modes, ownership, custom network events, `VRCObjectSync`, `VRCObjectPool`. |
-| [Players](docs/players/README.md) | `VRCPlayerApi`, tracking data, voice/audio, pickups, player tags, `Networking` static class. |
+| [Networking](docs/networking/README.md) | Sync modes, ownership, custom network events with parameters (`[NetworkCallable]`), `VRCObjectSync`, `VRCObjectPool`, network stats & debugging. |
+| [Players](docs/players/README.md) | `VRCPlayerApi`, tracking data, voice/audio, pickups & stations, player tags, drones, `Networking` static class. |
 | [GameObject Lifecycle](docs/gameobject-lifecycle/README.md) | `Instantiate`, `Destroy`, parenting, runtime constraints. |
-| [Graphics](docs/graphics/README.md) | `VRCGraphics`, `VRCShader`, materials, textures, meshes, render textures, `VRCImageDownloader`. |
+| [Graphics](docs/graphics/README.md) | `VRCGraphics`, `VRCShader`, materials, textures, meshes, render textures, `VRCAsyncGPUReadback`, `VRCImageDownloader`, `VRCCameraSettings` / `VRCQualitySettings`, Camera Dolly. |
 | [Data Containers](docs/data-containers/README.md) | `DataToken`, `DataList`, `DataDictionary`, `VRCJson`. |
-| [Persistence](docs/persistence/README.md) | `PlayerData`, Player Objects, persistence events. |
+| [Persistence](docs/persistence/README.md) | `PlayerData`, Player Objects, persistence events, storage usage & limits. |
 | [Loading](docs/loading/README.md) | `VRCStringDownloader`, image loading, trusted URLs. |
 | [Video](docs/video/README.md) | `VRCAVProVideoPlayer`, `VRCUnityVideoPlayer`, video events. |
 | [Input & UI](docs/input-and-ui/README.md) | Input events, animation events, UI events, whitelists. |
@@ -33,6 +35,8 @@ Each section pulls from three sources:
 | [AI Navigation](docs/ai-navigation/README.md) | NavMesh integration and constraints. |
 | [Editor API](docs/editor-api/README.md) | `UdonSharpEditorUtility`, `UdonSharpProgramAsset`, `UdonSharpGUI`, build hooks. |
 | [Compiler](docs/compiler/README.md) | Supported and unsupported C# features in U#, workarounds. |
+| [Dynamics](docs/dynamics/README.md) | PhysBones, Contacts, VRC Constraints in worlds (SDK 3.10+): Udon events, properties, `ApplyConfigurationChanges()`. |
+| [Tweening](docs/tweening/README.md) | `VRCTween` / `VRCTweenHandle` (SDK 3.10.4+): tween types, virtual tweens, `DelayedCall`, easing. |
 | [References](docs/references/README.md) | Source map, official docs, community resources. |
 
 ---
@@ -73,7 +77,7 @@ The proxy ↔ backing duality is the source of most of the editor-tooling API (s
 Because Udon has no published extern allowlist, this reference distinguishes the *strength of evidence* for every non-obvious claim:
 
 - **[Docs]** — Officially documented at <https://creators.vrchat.com/worlds/udon/> or <https://udonsharp.docs.vrchat.com/>.
-- **[Source]** — Confirmed by reading the open-source UdonSharp runtime / editor under `Packages/com.vrchat.UdonSharp/`.
+- **[Source]** — Confirmed by reading the open-source UdonSharp runtime / editor under `Packages/com.vrchat.worlds/Integrations/UdonSharp/` (the stand-alone `com.vrchat.UdonSharp` package before SDK 3.4.0).
 - **[Code-confirmed]** — Confirmed by sample or test code shipped in the UdonSharp package.
 - **[Community]** — Sourced from a named community project (GitHub repo, blog post, wiki page) with an explicit URL citation. Higher trust than `[Community-known]`.
 - **[Community-known]** — Widely used in production Udon worlds but not formally documented; not tied to a single citable source.
@@ -87,7 +91,7 @@ If a section makes a claim without a tag, it's a standard C#/Unity fact that doe
 
 This reference is sourced from:
 
-1. The open-source UdonSharp package at <https://github.com/vrchat-community/UdonSharp>.
+1. The UdonSharp source bundled in the Worlds SDK (`Packages/com.vrchat.worlds/Integrations/UdonSharp/`). The public repo at <https://github.com/vrchat-community/UdonSharp> still has the code up to U# 1.1.9 (Aug 2023); later changes ship only inside the SDK.
 2. Official VRChat creator documentation at <https://creators.vrchat.com/worlds/udon/>.
 3. UdonSharp dedicated documentation at <https://udonsharp.docs.vrchat.com/>.
 4. Community resources catalogued in [docs/references/community-resources.md](docs/references/community-resources.md).

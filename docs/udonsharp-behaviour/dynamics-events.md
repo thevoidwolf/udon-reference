@@ -92,6 +92,7 @@ Contacts are simulated locally, so expect the event on **every client** that see
 
 ## See also
 
+- [Dynamics](../dynamics/README.md): the PhysBone, Contact and Constraint components, their Udon properties and methods.
 - [Player events](player-events.md): collider and trigger callbacks for player capsules.
 - [Lifecycle events](lifecycle-events.md): the full event index.
 - Official: <https://creators.vrchat.com/common-components/physbones/#physbone-udon-access-in-worlds>, <https://creators.vrchat.com/common-components/contacts/#udon-access-in-worlds>
