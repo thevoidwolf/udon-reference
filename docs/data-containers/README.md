@@ -13,12 +13,23 @@ Source: <https://creators.vrchat.com/worlds/udon/data-containers/>. **[Docs]**
 | [DataDictionary](data-dictionary.md) | Key-value collection of `DataToken`s. |
 | [VRCJson](vrc-json.md) | Bidirectional conversion between containers and JSON strings. |
 
+Official subpages: [Data Tokens](https://creators.vrchat.com/worlds/udon/data-containers/data-tokens/), [Data Lists](https://creators.vrchat.com/worlds/udon/data-containers/data-lists/), [Data Dictionaries](https://creators.vrchat.com/worlds/udon/data-containers/data-dictionaries/), [VRCJSON](https://creators.vrchat.com/worlds/udon/data-containers/vrcjson/), [Byte and Bit Operations](https://creators.vrchat.com/worlds/udon/data-containers/byte-and-bit-operations/). **[Docs]**
+
+## Recent changes (SDK 3.7.4 → 3.10.5)
+
+| SDK | Change **[Docs]** (release notes) |
+|---|---|
+| 3.7.4 | VRCJson fixes: braces inside strings, `[ ]` with whitespace, leading BOM ignored. |
+| 3.10.2 | `TryDeserializeFromJson` always returns `false` (no throw) on bad input; `Minify` drops redundant spaces; `DataDictionary` struct-key lookup fix (e.g. `Vector3Int` keys). |
+| 3.10.4 | `DataList(int)` / `DataDictionary(int)` capacity constructors; `DataDictionary.EnsureCapacity()`. |
+| 3.10.5 | Stricter, more robust VRCJson parsing (rejects `[}`); `DataToken` holding an `int` can now be read as `long`. |
+
 ## Why these exist
 
 Udon's allowlist forbids most .NET generics in user code (see [Compiler constraints](../compiler/README.md)). `List<int>` and `Dictionary<string, MyClass>` would require runtime type information Udon doesn't carry. Instead VRChat ships:
 
 - `DataToken` — a tagged union that can hold any primitive, string, reference, list, or dictionary.
-- `DataList` / `DataDictionary` — homogeneous containers of `DataToken`s.
+- `DataList` / `DataDictionary` — containers of `DataToken`s (the tokens themselves may hold mixed types).
 
 Pay-per-use: you reach for these when arrays aren't enough.
 
@@ -42,25 +53,27 @@ Plain arrays remain faster for hot loops over primitives. `DataList`/`DataDictio
 [UdonSynced] string _serializedState;
 
 void Push() {
-    VRCJson.TrySerializeToJson(state, JsonExportType.Minify, out _serializedState);
-    RequestSerialization();
+    if (VRCJson.TrySerializeToJson(state, JsonExportType.Minify, out DataToken json)) {
+        _serializedState = json.String;   // the out param is a DataToken, not a string
+        RequestSerialization();
+    }
 }
 
 public override void OnDeserialization() {
-    VRCJson.TryDeserializeFromJson(_serializedState, out DataToken result);
-    if (result.TokenType == TokenType.Dictionary) {
+    if (VRCJson.TryDeserializeFromJson(_serializedState, out DataToken result)
+        && result.TokenType == TokenType.DataDictionary) {
         state = result.DataDictionary;
     }
 }
 ```
 
-Remember the sync packet budget — large containers serialize to large strings.
+Remember the sync budget (≈280 KB per Manual serialization, ≈11 KB/s overall **[Docs]**) — large containers serialize to large strings. The official docs recommend arrays over JSON-synced containers when you can, as they are cheaper in both performance and bandwidth. **[Docs]**
 
 ## Community helpers
 
-- **`koyashiro/generic-data-container`** — type-safe wrappers giving you compile-time `DataList<int>`, `DataDictionary<string, int>` via VPM. **[Community]** <https://github.com/koyashiro/generic-data-container>
+- **`koyashiro/generic-data-container`** — type-safe wrappers giving you compile-time `DataList<int>`, `DataDictionary<string, int>` via VPM. Stale (no activity since Feb 2025) — verify it still builds against the current SDK before adopting. **[Community]** <https://github.com/koyashiro/generic-data-container>
 - **Kemocade VRC Data Extensions** — extension methods over `DataList` / `DataDictionary` for ergonomic operations. **[Community]** <https://vpm-catalog.vercel.app/packages/com.kemocade.vrc.data.extensions/>
-- **`koyashiro/udon-list` and `koyashiro/udon-dictionary`** — pre-`DataList` standalone implementations. **[Community]** <https://github.com/koyashiro/udon-list>
+- **`koyashiro/udon-list` and `koyashiro/udon-dictionary`** — pre-`DataList` standalone implementations. **Archived**; use the built-in `DataList` / `DataDictionary` for new work. **[Community]** <https://github.com/koyashiro/udon-list>
 - **`hoke946/UArrayCollections`** — utility helpers treating plain arrays like List/Dictionary. Lower overhead than `DataList` for fixed-type uniform data. **[Community]** <https://github.com/hoke946/UArrayCollections>
 
 ## Structured-blob parsers

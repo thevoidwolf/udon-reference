@@ -48,7 +48,7 @@ for (int i = 0; i < transform.childCount; i++) {
 }
 ```
 
-`foreach (Transform child in transform)` also works — `Transform`'s `IEnumerator` is whitelisted. **[Community-known]**
+`foreach (Transform child in transform)` also works — not because `Transform`'s enumerator is allowlisted, but because the U# compiler special-cases it (`BoundForEachChildTransformStatement`) and lowers it to a `childCount` / `GetChild(i)` loop. `foreach` is otherwise only lowered for arrays and `string`. **[Source]**
 
 ## Layers and tags
 
@@ -87,6 +87,20 @@ Component[] all = GetComponents<Collider>();
 For UdonSharpBehaviours specifically there is a compiler shim (`GetComponentShim.cs`) that handles the cross-program lookup; see [Compiler](../compiler/README.md) if you need the details.
 
 `GetComponentInChildren`, `GetComponentInParent`, and their `s` variants are all supported.
+
+Since **SDK 3.7.5**, `GetComponent` can be called for all TextMeshPro component types (and `VRCMidiPlayer`). **[Docs]** (release notes)
+
+`GetComponent<T>()` is slow — especially for U# types, where U# must loop over every UdonBehaviour to find the right class. Cache results in `Start()`. **[Docs]** <https://creators.vrchat.com/worlds/udon/udonsharp/performance-tips/>
+
+## Enabling / disabling components
+
+```csharp
+myCollider.enabled = false;              // Collider / Renderer have their own `enabled`
+someBehaviour.enabled = false;           // any UnityEngine.Behaviour — SDK 3.10.2+
+bool live = someBehaviour.isActiveAndEnabled;   // SDK 3.10.2+
+```
+
+`enabled` / `isActiveAndEnabled` were allowlisted for everything deriving from `UnityEngine.Behaviour` in SDK 3.10.2. They don't work through a field typed as plain `Behaviour` that holds an `UdonSharpBehaviour` — declare the field with your U# type. **[Docs]** (release notes)
 
 ## Bounds
 

@@ -14,7 +14,7 @@ Destroy(GetComponent<AudioSource>());                 // remove a component
 
 ## `DestroyImmediate` is editor-only
 
-Udon does **not** expose `DestroyImmediate` at runtime. Use `Destroy` exclusively in U# code paths that run in the VRChat client.
+Use `Destroy` exclusively in U# code paths that run in the VRChat client. Whether `Object.DestroyImmediate` is exposed to Udon at all is not documented — check the SDK's Class Exposure Tree (VRChat SDK → Udon Sharp → Class Exposure Tree) for your version. **[Unverified]** In *editor* scripts, use `UdonSharpEditorUtility.DestroyImmediate()` to remove a U# behaviour together with its backing UdonBehaviour. **[Docs]**
 
 ## What can you destroy
 
@@ -36,6 +36,10 @@ Destroy(this);                  // destroys this UdonBehaviour but leaves the Ga
 
 Removing the only `UdonBehaviour` on a GameObject is valid. The GameObject itself stays alive.
 
+### Disable instead of destroy
+
+Often you only need the component to stop running. Since **SDK 3.10.2**, `enabled` and `isActiveAndEnabled` are allowlisted on everything deriving from `UnityEngine.Behaviour` (most built-in and custom components), so `someBehaviour.enabled = false` is reversible where `Destroy` is not. Known limitation: it doesn't work through a field typed as plain `Behaviour` that points at an `UdonSharpBehaviour` — type the field as your U# class instead. **[Docs]** (release notes, U# docs "Differences from Unity/C#")
+
 ## Patterns
 
 ### Auto-cleanup
@@ -45,6 +49,10 @@ void Start() {
     Destroy(gameObject, 5f);     // disappear in 5 s no matter what
 }
 ```
+
+### Cancelable timed disable (SDK 3.10.4+)
+
+`Destroy(obj, t)` can't be cancelled. If you just want an object gone after a delay *unless* something happens, `VRCTween.DelayedSetActive(obj, false, t)` returns a `VRCTweenHandle` you can `Kill()`; if the target is destroyed first, the action is silently skipped. **[Docs]** <https://creators.vrchat.com/worlds/udon/vrctween/virtual-tweens/>
 
 ### Pool members never destroy
 
@@ -69,9 +77,9 @@ if (Utilities.IsValid(target)) target.SomeMethod();
 
 ## Gotchas
 
-- **`Destroy` does not fire `OnDestroy` on Udon programs in time for cleanup**. If you need to release a resource (e.g. `VRCImageDownloader.Dispose()`), do it explicitly before calling `Destroy`.
+- **Don't rely on `OnDestroy` for cleanup.** Release resources explicitly before calling `Destroy` — e.g. `VRCImageDownloader.Dispose()`, or `IVRCImageDownload.Dispose()` for a single texture (allowlisted SDK 3.8.0). Undisposed downloads leak memory for the world's lifetime. **[Docs]** (Whether `OnDestroy` fires on U# behaviours at all is **[Unverified]**.)
 - A destroyed GameObject still exists for the current frame's late phases. References captured before `Destroy` and used later in the same frame may behave unpredictably.
-- Destroying authored scene objects breaks deterministic Network ID assignment. Don't do it if you have synced state that depends on cross-client identity.
+- Destroying authored *synced* scene objects locally desyncs them from other clients (they still exist elsewhere). Don't do it if you have synced state that depends on cross-client identity. **[Community-known]**
 
 ## See also
 

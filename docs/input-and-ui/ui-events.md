@@ -1,6 +1,6 @@
 # UI Events
 
-Wire Unity UI components (`Button`, `Slider`, `Toggle`, etc.) to U# methods.
+Wire Unity UI components (`Button`, `Slider`, `Toggle`, etc.) to U# methods — or directly to a whitelisted set of component methods/properties for simple interactions. Source: <https://creators.vrchat.com/worlds/udon/ui-events/>. **[Docs]**
 
 ## Setup
 
@@ -42,7 +42,9 @@ This is more verbose than wiring `slider.onValueChanged.Float` to a parameterize
 
 ## The UI whitelist
 
-`SendCustomEvent` is the *only* UdonBehaviour method exposed to UI events. To call other Unity component methods directly from the inspector — toggling a GameObject, playing an Animator parameter, etc. — those are limited to a specific allowlist documented at [UI Whitelist](ui-whitelist.md).
+On `UdonBehaviour`, UI events may call only `SendCustomEvent`, `RunProgram`, and `Interact`; `SendCustomEvent` is the one you want for U# methods. To call other Unity component methods directly from the inspector — toggling a GameObject, setting an Animator trigger, etc. — targets are limited to the allowlist documented at [UI Whitelist](ui-whitelist.md). **[Docs]**
+
+TextMeshPro components (`TMP_InputField`, `TMP_Dropdown`, `TextMeshProUGUI`) are usable from Udon code but are **not** UI-event targets; route their events through `SendCustomEvent` on an UdonBehaviour and read/write them from U#. **[Docs]** (absent from the UI-event list) `GetComponent` works on all TextMeshPro component types since SDK 3.7.5. **[Docs]** (release notes)
 
 ## Patterns
 
@@ -58,12 +60,10 @@ Wire each Button's `OnClick` to the appropriate method by name. Naming conventio
 
 ### State sync via networking
 
-UI is local. Mutating UdonBehaviour state from a UI button affects only the local client. To make a UI-triggered action global, the local handler should `SendCustomNetworkEvent`:
+UI is local. Mutating UdonBehaviour state from a UI button affects only the local client. To make a UI-triggered action global, the local handler should `SendCustomNetworkEvent` (no ownership needed to send an event; take ownership only if you also change synced variables):
 
 ```csharp
 public void OnButton_FireBell() {
-    if (!Networking.IsOwner(gameObject))
-        Networking.SetOwner(Networking.LocalPlayer, gameObject);
     SendCustomNetworkEvent(NetworkEventTarget.All, nameof(RingBell));
 }
 
