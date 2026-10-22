@@ -107,7 +107,20 @@ void Start() { _colorId = Shader.PropertyToID("_Color"); }
 
 ### Material PropertyBlocks
 
-`MaterialPropertyBlock` is **not** in the Udon allowlist. **[Unverified]** If you need per-renderer variation without forking materials, you generally cannot do this through MPB; alternatives are pre-authored material variants or `VRCShader.SetGlobal*` plus a `_UdonPerObjectIndex` uniform.
+`MaterialPropertyBlock` with `Renderer.SetPropertyBlock` / `GetPropertyBlock` is used from UdonSharp in community worlds. A VRChat bug report about MPB colour changes from U# shows that the API compiles and runs. **[Community]** <https://feedback.vrchat.com/open-beta/p/1354-the-color-change-using-materialpropertyblock-from-udonsharp-does-not-seem-t> No official page lists it, so check it in your SDK version before you build around it. **[Unverified]** for the full member set.
+
+```csharp
+MaterialPropertyBlock _mpb;
+void Start() { _mpb = new MaterialPropertyBlock(); }
+
+public void Tint(Renderer r, Color c) {
+    r.GetPropertyBlock(_mpb);
+    _mpb.SetColor("_Color", c);
+    r.SetPropertyBlock(_mpb);   // per-renderer override, no material fork
+}
+```
+
+If MPBs don't fit your case, use pre-authored material variants, or `VRCShader.SetGlobal*` with a `_UdonPerObjectIndex` uniform.
 
 ## See also
 

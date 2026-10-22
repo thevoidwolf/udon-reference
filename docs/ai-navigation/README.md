@@ -1,24 +1,29 @@
 # AI Navigation
 
-Udon supports Unity's AI Navigation package: `NavMesh`, `NavMeshAgent`, `NavMeshObstacle`, runtime baking via `NavMeshSurface`.
+Udon supports Unity 2022's **AI Navigation package** (`com.unity.ai.navigation` 1.1, which the VRChat docs link to): `NavMesh`, `NavMeshAgent`, `NavMeshObstacle`, NavMesh Links, and runtime baking through `NavMeshSurface`. It was integrated in **SDK 3.7.0**, after first appearing in the 3.6.2 beta. **[Docs]** <https://creators.vrchat.com/releases/release-3-7-0/>
 
-Source: <https://creators.vrchat.com/worlds/udon/ai-navigation/>. **[Docs]**
+Sources: <https://creators.vrchat.com/worlds/udon/ai-navigation/>, plus the official [AI Navigation Example](https://creators.vrchat.com/worlds/examples/ai-navigation/), which has NPCs re-pathing after `NavMeshSurface.BuildNavMesh` runs when a block is dropped. **[Docs]**
 
 ## What works
 
-- **`NavMeshAgent`** as a component on a GameObject — `SetDestination`, `velocity`, `speed`, `angularSpeed`, `stoppingDistance`, `Warp`, etc. **[Docs]**
-- **`NavMesh`** queries — `Raycast`, `SamplePosition`, `CalculatePath`. **[Docs]**
-- **`NavMeshObstacle`** for dynamic obstacles.
-- **`NavMeshSurface`** for runtime baking. **[Docs]**
-- **Off-mesh links** for door / jump / climb traversals.
-- **Multiple NavMesh Surfaces** per world for granular control.
+- **`NavMeshAgent`** as a component on a GameObject, with `destination` / `SetDestination` (used in the official example **[Docs]**). Other common members such as `velocity`, `speed`, `angularSpeed`, `stoppingDistance` and `Warp` work too. **[Community-known]**
+- **`NavMesh`** static queries (`Raycast`, `SamplePosition`, `CalculatePath`). The docs don't list these, so test before you rely on them. **[Unverified]**
+- **`NavMeshObstacle`**. Obstacles can now be dynamic. **[Docs]**
+- **Runtime generation.** You can create and update NavMeshes in the VRChat client with `NavMeshSurface`. **[Docs]**
+- **NavMesh Links and Off-Mesh Links** for doors, jumps and drops. **[Docs]**
+- **Multiple NavMesh Surfaces** per world, plus **Modifiers** and **Modifier Volumes** for finer control. **[Docs]**
+- **Area costs** are exported into the world data and restored when someone joins. **[Docs]**
 
 ## Known limitations
 
-- **Custom Agent Types are not supported.** Use the built-in agent type definitions.
-- **`NavMeshSurface.CollectObjects` does not function correctly** in Udon. **[Docs]**
-- **`NavMeshSurface.UpdateNavMesh()`** does not function correctly. **[Docs]**
-- VRChat does not enumerate the full method allowlist — most other `NavMeshSurface` methods (`BuildNavMesh`, etc.) and the standard `NavMeshAgent` surface are believed to work. **[Unverified]**
+Per the VRChat docs: **[Docs]**
+
+- **Custom Agent Types aren't supported.** They're bundled into world data, but VRChat has no way to retrieve and apply them yet, so use the default agent type. The feature is "being considered".
+- **`NavMeshSurface.agentTypeID`** and **`NavMeshLink.agentTypeID`** aren't useful, because runtime baking doesn't work with custom agents.
+- **`NavMeshSurface.CollectObjects`** is unusable because enum arrays aren't available in Udon.
+- **`NavMeshSurface.UpdateNavMesh()`** returns an `AsyncOperation`, which Udon can't use. *The method itself should still work*, but you can't await or poll its completion.
+
+VRChat doesn't list the full method allowlist. `BuildNavMesh` is shown working in the official example **[Docs]**, and most of the standard `NavMeshAgent` surface is believed to work. **[Unverified]**
 
 For the full method surface, consult Unity's official AI Navigation package documentation; VRChat docs point readers there.
 
@@ -56,6 +61,8 @@ public class Wanderer : UdonSharpBehaviour {
 `NavMeshSurface.BuildNavMesh()` works in Udon and is the standard way to bake a NavMesh whose obstacles only exist at runtime (e.g. instantiated scenery).
 
 ```csharp
+using Unity.AI.Navigation;   // NavMeshSurface lives here, not in UnityEngine.AI
+
 public NavMeshSurface surface;
 
 void Start() {
@@ -76,6 +83,7 @@ The owner-only approach is standard.
 
 ## See also
 
-- Unity's [AI Navigation package documentation](https://docs.unity3d.com/Packages/com.unity.ai.navigation@latest).
+- Unity's [AI Navigation 1.1 package documentation](https://docs.unity3d.com/Packages/com.unity.ai.navigation@1.1/manual/index.html), the version the VRChat docs link to. `@latest` may describe a newer package than the one shipped with Unity 2022.3.
+- Official [AI Navigation Example](https://creators.vrchat.com/worlds/examples/ai-navigation/) and its [example world](https://vrchat.com/home/world/wrld_b7b99484-d92f-403d-ac10-4da7e5a9ce14). **[Docs]**
 - [GameObject Lifecycle](../gameobject-lifecycle/README.md) — for spawning navigatable scenery.
 - [Networking](../networking/README.md).
