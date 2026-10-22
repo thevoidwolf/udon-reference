@@ -2,11 +2,12 @@
 
 Convenience extension methods on `GameObject` and `Component` for working with `UdonSharpBehaviour`s without going through Unity's regular `AddComponent` / `GetComponent` flow.
 
-Source: `Editor/Editors/UdonSharpComponentExtensions.cs`. **[Source]**
+Source: `Editor/Editors/UdonSharpComponentExtensions.cs` (bundled at `Packages/com.vrchat.worlds/Integrations/UdonSharp/`). **[Source]**
 
 ## Adding components
 
 ```csharp
+public static UdonSharpBehaviour AddUdonSharpComponent(this GameObject gameObject, Type type);
 public static T AddUdonSharpComponent<T>(this GameObject gameObject) where T : UdonSharpBehaviour;
 ```
 
@@ -15,9 +16,12 @@ Adds a U# component **without** Undo registration. Use [`UdonSharpUndo.AddCompon
 ```csharp
 GameObject go = new GameObject("Bullet");
 var b = go.AddUdonSharpComponent<Bullet>();
-b.velocity = Vector3.forward * 10f;
-b.ApplyProxyModifications(ProxySerializationPolicy.All);
+b.velocity = Vector3.forward * 10f;   // proxy data is authoritative in edit mode
 ```
+
+## Serialization helpers (obsolete no-ops)
+
+`UpdateProxy()` and `ApplyProxyModifications()` (each with an optional `ProxySerializationPolicy`) are still declared here but are `[Obsolete]` with empty bodies. Use `UdonSharpEditorUtility.CopyUdonToProxy` / `CopyProxyToUdon` if you need Play-mode sync. **[Source]**
 
 ## `GetUdonSharpComponent*` (deprecated)
 

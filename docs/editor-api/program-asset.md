@@ -1,6 +1,6 @@
 # UdonSharpProgramAsset
 
-`UdonSharpEditor.UdonSharpProgramAsset` is a `ScriptableObject` asset that binds a `.cs` source file to its compiled Udon Program. Created automatically when you right-click → Create → U# script. Source: `Editor/UdonSharpProgramAsset.cs`. **[Source]**
+`UdonSharpEditor.UdonSharpProgramAsset` is a `ScriptableObject` asset that binds a `.cs` source file to its compiled Udon Program. Created automatically when you right-click → Create → U# Script. Source: `Editor/UdonSharpProgramAsset.cs` (bundled at `Packages/com.vrchat.worlds/Integrations/UdonSharp/`). **[Source]**
 
 ## Important fields and properties
 
@@ -21,7 +21,9 @@ public static bool IsAnyProgramAssetSourceDirty();
 public static bool AnyUdonSharpScriptHasError();
 public static UdonSharpProgramAsset GetProgramAssetForClass(Type classType);
 public static Type GetBehaviourClass(UdonBehaviour behaviour);
-public static void DeleteProgramAsset(UdonSharpProgramAsset programAsset);
+
+// Lives on UdonSharpEditorUtility, not on UdonSharpProgramAsset:
+UdonSharpEditorUtility.DeleteProgramAsset(UdonSharpProgramAsset programAsset);
 ```
 
 | Method | Use |
@@ -32,7 +34,9 @@ public static void DeleteProgramAsset(UdonSharpProgramAsset programAsset);
 | `AnyUdonSharpScriptHasError` | True if any program has a compile error. **Check before triggering an SDK build.** |
 | `GetProgramAssetForClass(typeof(MyScript))` | Find the asset associated with a specific class. |
 | `GetBehaviourClass(udonBehaviour)` | What C# class is this UdonBehaviour running? |
-| `DeleteProgramAsset` | Safe deletion (cleans up linked serialized assets too). |
+| `UdonSharpEditorUtility.DeleteProgramAsset` | Safe deletion (also deletes the linked serialized Udon program asset). **[Source]** |
+
+Also on the menu: `VRChat SDK → Udon Sharp → Refresh All UdonSharp Assets` calls the (public, non-`[PublicAPI]`) `UdonSharpProgramAsset.UdonSharpCheckAbsent()` to rebuild the program-asset cache. **[Source]**
 
 ## Instance methods
 
@@ -49,7 +53,9 @@ Returns the C# class that this program asset compiles.
 ```csharp
 #if UNITY_EDITOR
 public class PreBuildValidator : IVRCSDKBuildRequestedCallback {
-    public int callbackOrder => 0;
+    // U#'s own upload compile runs at callbackOrder 100 (and already aborts on errors).
+    // Use > 100 to see this build's results; at 0 you'd be reading the previous compile.
+    public int callbackOrder => 101;
     public bool OnBuildRequested(VRCSDKRequestedBuildType type) {
         if (UdonSharpProgramAsset.AnyUdonSharpScriptHasError()) {
             EditorUtility.DisplayDialog("Build blocked", "Fix U# errors first.", "OK");

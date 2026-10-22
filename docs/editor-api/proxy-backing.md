@@ -11,7 +11,7 @@ Every `UdonSharpBehaviour` component (the C# "proxy") is paired with an `UdonBeh
 private VRC.Udon.UdonBehaviour _udonSharpBackingUdonBehaviour;
 ```
 
-`Runtime/UdonSharpBehaviour.cs:263`. **[Source]**
+`Runtime/UdonSharpBehaviour.cs` (~line 422 in SDK 3.10.3; bundled at `Packages/com.vrchat.worlds/Integrations/UdonSharp/`). **[Source]**
 
 | Component | Visible? | Role |
 |---|---|---|
@@ -48,25 +48,23 @@ The reverse direction (`CopyUdonToProxy`) is used during Play mode to surface th
 
 ## When sync happens automatically
 
-UdonSharp's import hooks and inspector code call `CopyProxyToUdon` at various points:
-- On script reload (when fields change shape).
-- On entering Play mode.
-- During the SDK build process.
+In U# 1.x the proxy's Unity-serialized data is authoritative in edit mode ("U# now goes off the behaviour data for setting up UdonBehaviours" — source comment). UdonSharp copies it into the backing itself: **[Source]**
+- When the scene is processed — entering Play mode and during the SDK build (`UdonSharpEditorManager.OnSceneBuild` → `CopyProxyToUdon(…, ProxySerializationPolicy.All)` for every behaviour in the scene).
+- For prefabs during the build's prefab pass (`ProxySerializationPolicy.PreBuildSerialize`, internal).
+- In **Play mode**, around every inspector draw: `CopyUdonToProxy` before your `OnInspectorGUI`, `CopyProxyToUdon` after (`UdonSharpBehaviourEditor`).
 
-You explicitly call it from a custom inspector when you've programmatically modified fields and need the change reflected on the backing immediately:
+So a custom inspector just edits fields (with `Undo.RecordObject` / `SerializedProperty`):
 
 ```csharp
 public override void OnInspectorGUI() {
     if (UdonSharpGUI.DrawDefaultUdonSharpBehaviourHeader(target)) return;
     MyScript t = (MyScript)target;
 
-    // ... edit fields on t ...
-
-    t.ApplyProxyModifications(ProxySerializationPolicy.All);
+    // ... edit fields on t (record Undo first) ...
 }
 ```
 
-`ApplyProxyModifications` is the extension wrapper around `UdonSharpEditorUtility.CopyProxyToUdon`.
+Call `UdonSharpEditorUtility.CopyProxyToUdon(proxy, policy)` yourself only when *other* editor code (menu items, windows, tools) mutates proxies **during Play mode** and needs the running backing updated. The old `ApplyProxyModifications()` / `UpdateProxy()` extensions are obsolete no-ops — see [GUI Helpers](gui-helpers.md#applyproxymodifications--updateproxy-obsolete).
 
 ## What gets copied
 
@@ -92,8 +90,9 @@ UdonSharpEditorUtility.DestroyImmediate(proxy);    // destroys both proxy and ba
 
 ## Gotchas
 
-- **Mutating the proxy in code without calling `ApplyProxyModifications` leaves the backing stale.** Especially in custom inspectors that bypass `SerializedProperty`.
-- **Two-way sync isn't free.** Custom inspectors should batch field edits, then call `ApplyProxyModifications` once.
+- **Play-mode tooling must push explicitly.** Outside UdonSharp's inspector wrapper, mutating a proxy while playing leaves the running backing stale until you call `CopyProxyToUdon`.
+- **Two-way sync isn't free.** Batch field edits, then copy once — `ProxySerializationPolicy.All` walks every referenced behaviour.
+- **Still following 0.x tutorials?** `ApplyProxyModifications` / `UpdateProxy` / `GetUdonSharpComponent` compile with obsolete warnings but no longer do anything special. **[Source]**
 - **At runtime there is no proxy.** The proxy exists for editor purposes. Don't write runtime code that relies on it.
 
 ## See also

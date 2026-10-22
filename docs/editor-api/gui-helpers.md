@@ -1,6 +1,6 @@
 # UdonSharpGUI
 
-Static class `UdonSharpEditor.UdonSharpGUI`. Inspector-style drawing helpers used by U#'s default inspectors and available to custom inspectors. Source: `Editor/Editors/UdonSharpGUI.cs`. **[Source]**
+Static class `UdonSharpEditor.UdonSharpGUI`. Inspector-style drawing helpers used by U#'s default inspectors and available to custom inspectors. Source: `Editor/Editors/UdonSharpGUI.cs` (bundled at `Packages/com.vrchat.worlds/Integrations/UdonSharp/`). **[Source]**
 
 Wrap every call in `#if !COMPILER_UDONSHARP && UNITY_EDITOR`.
 
@@ -78,6 +78,14 @@ public static void DrawUILine(Color color, int thickness = 2, int padding = 4);
 
 Separator line.
 
+```csharp
+public static void DrawPublicVariables(UdonBehaviour behaviour, UdonSharpProgramAsset programAsset, ref bool dirty);
+```
+
+Draws a backing `UdonBehaviour`'s public-variable table directly. **[Source]**
+
+`DrawConvertToUdonBehaviourButton(...)` still exists for compatibility but always returns `false` (conversion is gone in U# 1.x). **[Source]**
+
 ## Custom inspector skeleton
 
 ```csharp
@@ -101,8 +109,7 @@ public class MyScriptEditor : Editor {
         EditorGUI.BeginChangeCheck();
         EditorGUILayout.PropertyField(_someProp);
         if (EditorGUI.EndChangeCheck()) {
-            serializedObject.ApplyModifiedProperties();
-            t.ApplyProxyModifications(ProxySerializationPolicy.All);
+            serializedObject.ApplyModifiedProperties();   // that's all U# 1.x needs
         }
 
         UdonSharpGUI.DrawUILine();
@@ -112,15 +119,18 @@ public class MyScriptEditor : Editor {
 #endif
 ```
 
-## `ApplyProxyModifications`
+## `ApplyProxyModifications` / `UpdateProxy` (obsolete)
 
-An extension method on `UdonSharpBehaviour` that wraps `UdonSharpEditorUtility.CopyProxyToUdon`:
+These `UdonSharpBehaviour` extension methods are `[Obsolete]` and have **empty bodies** in U# 1.x: "ApplyProxyModifications is no longer needed for editor scripts to modify the state of U# behaviours. If you need editor scripts to update behaviours in play mode, consider using CopyProxyToUdon". **[Source]** `Editor/Editors/UdonSharpComponentExtensions.cs`
 
 ```csharp
-behaviour.ApplyProxyModifications(ProxySerializationPolicy.All);
+// 0.x-era code — compiles with a warning, does nothing:
+behaviour.ApplyProxyModifications();
+// 1.x: edit fields directly; in Play mode, push to the running backing explicitly:
+UdonSharpEditorUtility.CopyProxyToUdon(behaviour, ProxySerializationPolicy.All);
 ```
 
-Use after any code that modifies proxy fields outside `SerializedProperty`-based edits.
+Inside a custom inspector drawn through UdonSharp's editor wrapper, the Play-mode copy in both directions is already done for you. **[Source]** The official [editor-scripting page](https://udonsharp.docs.vrchat.com/editor-scripting) still shows the 0.x calls.
 
 ## See also
 
