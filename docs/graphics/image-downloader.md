@@ -212,7 +212,7 @@ Free the old download only after the new one has arrived, so the frame never sho
 - **Official `examples-image-loading`** — the canonical slideshow + image-array reference. Reuses a single downloader for the lifetime of the world. **[Docs]** <https://github.com/vrchat-community/examples-image-loading>
 - **PachyPictureFrame** (kdingo). **[Community]** <https://github.com/kdingo/PachyPictureFrame>
 - **DeacsImageLoader** (DeaconDP). **[Community]** <https://github.com/DeaconDP/DeacsImageLoader>
-- **Discord2VRC** (acertainbluecat) — redirector pattern for Discord-hosted images whose signed URLs expire. **[Community]** <https://github.com/acertainbluecat/Discord2VRC>
+- **Discord2VRC** (acertainbluecat) — redirector pattern for Discord-hosted images whose signed URLs expire. Note that image loading does not follow redirects (see the table above), so verify it still works before relying on it. **[Community]** <https://github.com/acertainbluecat/Discord2VRC>
 
 ## Common pitfalls (community)
 

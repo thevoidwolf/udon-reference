@@ -157,8 +157,9 @@ public override void OnPlayerDataStorageWarning(VRCPlayerApi player) {
 For a few related values, prefix the keys consistently:
 
 ```csharp
-PlayerData.SetInt   ("inv_count", inventory.Length);
-PlayerData.SetString("inv_state", VRCJson.TrySerializeToJson(inventory, JsonExportType.Minify, out var s) ? s : "");
+// inventory is a DataList
+PlayerData.SetInt   ("inv_count", inventory.Count);
+PlayerData.SetString("inv_state", VRCJson.TrySerializeToJson(inventory, JsonExportType.Minify, out DataToken json) ? json.String : "");
 ```
 
 ### Saves around player leave
