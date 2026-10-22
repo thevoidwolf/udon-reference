@@ -14,7 +14,8 @@ See [Data Containers](../data-containers/README.md).
 
 ## Generic methods
 
-You can't write `T Pick<T>(T[] items)`. Options:
+You can't declare `T Pick<T>(T[] items)` on a `UdonSharpBehaviour`. Options:
+- Move it into a separate `static class` as a generic static (or extension) method — the bundled compiler accepts that. **[Code-confirmed]** `Tests~/TestScripts/Core/GenericsTest.cs`
 - Inline the logic at each call site.
 - Use `object[]` and cast.
 - Specialize per type: `int PickInt(int[])`, `string PickString(string[])`.
@@ -99,7 +100,7 @@ C#:
 
 U#:
 ```csharp
-// Use individual `out` params, or pack into a small class — but classes have their own caveats.
+// Use individual `out` params (supported on user methods [Docs]), or pack into a DataList / parallel arrays.
 void Get(out int a, out string b) { a = 1; b = "hello"; }
 ```
 
@@ -117,7 +118,21 @@ bool TryDoThing(string input, out int result) {
 
 ## `enum` and Bit flags
 
-Enums with `[Flags]` are supported. Bitwise ops on `int`-backed enums work normally.
+Enums with `[Flags]` are supported. Bitwise ops on `int`-backed enums work normally. Declare your enums at namespace level, not nested inside the behaviour ("Nested type declarations are not currently supported by U#"). **[Source]** If an enum `switch` or comparison misbehaves on an older SDK, update — an enum miscompile tied to specific member counts was fixed in **SDK 3.10.4**. **[Docs]**
+
+## Static fields / shared state
+
+Static fields on your own types are rejected ("Static fields are not yet supported on user defined types"). **[Source]** Use `const` for compile-time constants; for state shared between behaviours, put it in instance fields on one "manager" behaviour and give others a reference to it.
+
+## Object initializers / `?.` / `is`
+
+| C# | U# substitute |
+|---|---|
+| `new Foo { X = 1 }` | Construct, then assign fields on separate lines. Array initializers `{ 1, 2 }` are fine. |
+| `a?.b` | `a != null ? a.b : default` (or `Utilities.IsValid(a)` for Unity objects / players). |
+| `x is Foo f` / `x as Foo` | Keep a correctly-typed field, or compare U# type IDs — see [Type identity](../udonsharp-behaviour/type-identity.md). |
+
+All **[Source]** (no binder support in the bundled compiler).
 
 ## `nameof(...)`
 
@@ -142,10 +157,10 @@ Persistence: [`PlayerData`](../persistence/player-data.md). External text: [`VRC
 
 | Need | Library | Source |
 |---|---|---|
-| Type-safe generic data containers | `koyashiro/generic-data-container` | <https://github.com/koyashiro/generic-data-container> |
+| Type-safe generic data containers | `koyashiro/generic-data-container` (stale since Feb 2025) | <https://github.com/koyashiro/generic-data-container> |
 | Cancellable delayed events | `MyroG/Advanced-local-events` | <https://github.com/MyroG/Advanced-local-events> |
 | Coroutine-style scheduling | `Caeden117/UdonCoroutines` | <https://github.com/Caeden117/UdonCoroutines> |
-| Event-hub / pub-sub between behaviours | `orels1/UdonToolkit` (EventDispatcher) | <https://ut.orels.sh/attributes/attributes-list> |
+| Event-hub / pub-sub between behaviours | `orels1/UdonToolkit` (EventDispatcher; stale, predates U# 1.0) | <https://ut.orels.sh/attributes/attributes-list> |
 | Reliable typed RPC | `Xytabich/UNet` (archived) | <https://github.com/Xytabich/UNet> |
 | Deterministic shared-state networking | `JanSharp/VRCLockstep` | <https://github.com/JanSharp/VRCLockstep> |
 | Post-compile bytecode optimisation | `BlueAmulet/UdonSharpOptimizer` | <https://github.com/BlueAmulet/UdonSharpOptimizer> |
@@ -159,13 +174,17 @@ All **[Community]**.
 | "X is not exposed to Udon" | Method/field not whitelisted (e.g. `Math.PI`, certain operators) | Use the `Mathf` equivalent or a VRChat-exposed API. |
 | "Cannot use generic method X" | Generic dispatch unsupported except for whitelisted Unity types | Use the non-generic overload: `(UdonBehaviour)GetComponent(typeof(UdonBehaviour))`. |
 | "Awake unsupported, use Start" | `Awake` not exposed | Use `Start`. `OnEnable` fires before `Start`. |
-| "try/catch not supported" | No exception handling | Use guard clauses / early returns. |
-| "out/in/ref parameters not supported" | Not allowed on user methods | Return arrays / structs, or use fields. |
-| "is/as not supported" | Type-pattern checks not allowed | Restructure with explicit type fields, or upgrade to U# 1.x. |
+| "Try/Catch/Finally is not supported by UdonSharp…" **[Source]** | No exception handling | Use guard clauses / early returns. |
+| "Static fields are not yet supported on user defined types" **[Source]** | `static` / `static readonly` field | Use `const` or an instance field on a shared manager behaviour. |
+| "Cannot use typeof on user-defined types" **[Source]** | `typeof(MyScript)` | Use `GetUdonTypeID<MyScript>()` / `GetComponent<MyScript>()`. |
+| "U# Does not yet support initializer lists" **[Source]** | `new Foo { … }` | Assign members after construction. |
+| "Local method declarations are not currently supported…" **[Source]** | Local function | Promote to a private method. |
+| "UdonSharpBehaviour classes must have the same name as their containing .cs file" **[Source]** | Class/file name mismatch | Rename one to match. |
+| "UdonSharp does not currently support node type '…'" **[Source]** | Unsupported syntax (`?.`, `is`/`as`, `goto`, lambdas, `switch` expressions, …) | See [Unsupported features](unsupported-features.md). |
 | Recursion stack overflow | Method called itself without `[RecursiveMethod]` | Add the attribute. |
 | Synced var set, event arrives before var update on remote | Event-before-var race | Defer event a frame, or detect change in `OnDeserialization`. |
 
-**[Community]** — error-message table cross-referenced with UdonRabbit.Analyzer's rule list (URA0001–URA0055).
+**[Community]** — error-message table originally cross-referenced with the (archived) UdonRabbit.Analyzer rule list (URA0001–URA0055); rows tagged **[Source]** quote the bundled compiler's messages verbatim. Note `ref`/`out` parameters on user methods **are** supported. **[Docs]**
 
 ## See also
 

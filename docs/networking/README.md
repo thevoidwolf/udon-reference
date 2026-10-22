@@ -7,10 +7,11 @@ Udon ships its own network model. As an author you do not write socket code or p
 | Page | What's in it |
 |---|---|
 | [Sync Modes](sync-modes.md) | Continuous vs Manual: when each fires, when to use which. |
-| [Ownership](ownership.md) | Per-GameObject owner concept, transfer, `OnOwnershipRequest`. |
-| [Custom Network Events](custom-network-events.md) | `SendCustomNetworkEvent`, `NetworkEventTarget`, naming rules. |
+| [Ownership](ownership.md) | Per-GameObject owner concept, transfer, `OnOwnershipRequest`, master vs instance owner (`Networking.Master`, `InstanceOwner`, `OnMasterTransferred`). |
+| [Custom Network Events](custom-network-events.md) | `SendCustomNetworkEvent`, `NetworkEventTarget`, `[NetworkCallable]` parameters, rate limits, `NetworkCalling`. |
 | [Serialization](serialization.md) | The packet model: what fits, what gets dropped, how `OnPostSerialization` reports it. |
-| [Network IDs](network-ids.md) | Pre-build network ID assignment for scene objects. |
+| [Network IDs](network-ids.md) | Network ID assignment, world-version compatibility, Network ID Import/Export Utility. |
+| [Debugging & Network Stats](debugging-and-stats.md) | `VRC.SDK3.Network.Stats` (SDK 3.8.1+), debug views 4/6/8/9, official troubleshooting checklist. |
 | [VRCObjectSync](object-sync.md) | Built-in Transform + Rigidbody sync component. |
 | [VRCObjectPool](object-pool.md) | Built-in object pool for shared spawning. |
 
@@ -33,13 +34,14 @@ There is no concept of "rollback" or "client prediction." The owner is authorita
 | Pickup that physically settles for everyone | `VRCObjectSync` component |
 | Spawn an object visible to everyone | `VRCObjectPool` |
 | Trigger a one-off action on remote clients | `SendCustomNetworkEvent(target, name)` |
+| One-off action that carries data | `[NetworkCallable]` method + `SendCustomNetworkEvent(target, name, args…)` (SDK 3.8.1+) |
 | Per-player saved state across sessions | Player Object + `VRCEnablePersistence` |
 
 ## What the network *doesn't* do for you
 
 - **No automatic conflict resolution.** Two clients both writing to the same `[UdonSynced]` field race; whoever owns it last wins.
-- **No anti-cheat.** Any client can change ownership and lie. Worlds that need authority (scoreboards, locked doors) must explicitly trust only the master or veto ownership in `OnOwnershipRequest`.
-- **No reliability guarantee on `SendCustomNetworkEvent`.** It is best-effort. Important state transitions should be replicated by syncing the state itself, not by sending an event and hoping it arrives.
+- **No anti-cheat.** Any client can change ownership and lie. Worlds that need authority (scoreboards, locked doors) must veto ownership in `OnOwnershipRequest` and check who sent events with `NetworkCalling.CallingPlayer` (SDK 3.8.1+). Gate privileged actions on the **instance owner** or your own moderator list, not the master: VRChat says master status should not be used for access control. **[Docs]**
+- **No persistence for `SendCustomNetworkEvent`.** Events reach only the players present at send time and are never replayed for late joiners. **[Docs]** Events above the rate limit are queued, not dropped, but a client can still leave before receiving one. Replicate important state transitions by syncing the state itself.
 
 ## See also
 
@@ -47,3 +49,5 @@ There is no concept of "rollback" or "client prediction." The owner is authorita
 - [Attributes → BehaviourSyncMode](../attributes/behaviour-sync-mode.md)
 - [UdonSharpBehaviour → networking events](../udonsharp-behaviour/networking-events.md)
 - [Players → Networking class](../players/networking-class.md) — the `VRC.SDKBase.Networking` static.
+- [Attributes → NetworkCallable](../attributes/network-callable.md)
+- Official: <https://creators.vrchat.com/worlds/udon/networking/>

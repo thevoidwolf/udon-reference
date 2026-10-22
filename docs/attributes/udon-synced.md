@@ -37,7 +37,7 @@ public enum UdonSyncMode
 
 | Value | Behaviour |
 |---|---|
-| `NotSynced` | Equivalent to omitting the attribute. Marked as soft-deprecated in source. |
+| `NotSynced` | Equivalent to omitting the attribute. Its `[Obsolete]` marker is commented out in source, so it's effectively soft-deprecated. **[Source]** |
 | `None` | Snap to the new value. No interpolation. The default. |
 | `Linear` | Lerp toward the new value over the sync interval. **Numeric types only.** |
 | `Smooth` | Smoothed interpolation. **Numeric types only.** |
@@ -52,7 +52,10 @@ The Udon allowlist accepts these field types for sync:
 - `string` (max length capped by packet budget — see [serialization](../networking/serialization.md)).
 - `char`.
 - Unity value types: `Vector2`, `Vector3`, `Vector4`, `Quaternion`, `Color`, `Color32`.
-- Arrays of any of the above.
+- `VRCUrl` (~2 bytes per char). **[Docs]**
+- Arrays of any of the above. **Always initialize synced arrays** (at least to an empty array): if any synced array is `null`, the behaviour won't sync at all. **[Docs]**
+
+Official list: <https://creators.vrchat.com/worlds/udon/networking/network-details/#synced-variables>. The same set is valid for `[NetworkCallable]` parameters (SDK 3.8.1+). **[Docs]**
 
 **Not syncable:**
 - `DataList` / `DataDictionary` / `DataToken` — these are reference types and not in the syncable list. Use a string of serialized JSON via `VRCJson` and sync the string.
@@ -92,7 +95,7 @@ Per VRChat's official Network Details page: **[Docs]** <https://creators.vrchat.
 
 - **Continuous sync:** ~200 bytes per serialization. Long strings or arrays blow this immediately.
 - **Manual sync:** ~280 KB per serialization. Much higher headroom.
-- Bandwidth ceiling: ~11 KB/s per script.
+- Bandwidth ceiling: "about 11 kilobytes per second" for Udon scripts. VRChat notes all specs are subject to change.
 
 If your packet exceeds the budget, `OnPostSerialization(result)` reports `result.success == false`. Split state across multiple behaviours or use string-encoded chunks. See [Serialization](../networking/serialization.md) for size-reduction techniques.
 

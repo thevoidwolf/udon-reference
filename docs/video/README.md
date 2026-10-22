@@ -1,6 +1,6 @@
 # Video
 
-VRChat ships two video player components, both deriving from `BaseVRCVideoPlayer`. Both are scene components — drag the relevant prefab from `VRChat SDK - Worlds/Samples/UdonExampleScene/Prefabs/VideoPlayers/` into your scene.
+VRChat ships two video player components, both deriving from `BaseVRCVideoPlayer`. Both are scene components. Drag the prefab you need from `Packages/VRChat SDK - Worlds/Samples/UdonExampleScene/Prefabs/VideoPlayers` into your scene. **[Docs]** The prefabs' sample sync graphs turn looping off so that sync works. To loop, enable *Loop* and remove the UdonBehaviour. **[Docs]**
 
 Source: <https://creators.vrchat.com/worlds/udon/video-players/>. **[Docs]**
 
@@ -16,10 +16,12 @@ Source: <https://creators.vrchat.com/worlds/udon/video-players/>. **[Docs]**
 | Feature | AVPro | Unity |
 |---|---|---|
 | Live streams (YouTube Live, Twitch) | **Yes** | No |
-| Editor Play Mode preview | No (needs Build & Test) | **Yes** |
+| Editor Play Mode preview | No (needs Build & Test) | **Yes**, for direct `.mp4` / `.webm` links only. YouTube, Vimeo and other hosted services work only in the client. |
 | Linked file URLs | Yes | Yes |
 | Audio support | 6-channel (5.1), EAC3 7.1 on PCVR | Standard stereo |
-| Quest | Yes (rate-limited) | Yes |
+| Android / Quest | Yes. The URL resolver now runs on Android too. | Yes |
+
+On Android, VRChat doesn't play video from hosts that don't use **HTTPS**. **[Docs]** <https://creators.vrchat.com/worlds/udon/video-players/www-whitelist/>
 
 Most production worlds use AVPro. Use Unity Video when you want quick iteration on a non-stream URL in the editor.
 
@@ -27,7 +29,20 @@ Most production worlds use AVPro. Use Unity Video when you want quick iteration 
 
 > *"A given user is only permitted to handle a new video player URL once every five seconds."* **[Docs]**
 
-This is per **user**, not per player — switching URLs across multiple video players counts against the same budget.
+This is per **user** and global across all video players. It covers default URLs as well as `LoadURL` / `PlayURL`. A late joiner in a world with two playing video players has to send two requests, and if both go out at once one fails, so stagger them. **[Docs]**
+
+## Untrusted URLs in public instances (SDK 3.7.5+)
+
+Since SDK 3.7.5, video players **won't play untrusted URLs in Public and Group Public instances** unless the domain is in the world's own **Video Player Allowed Domains** list. **[Docs]** <https://creators.vrchat.com/releases/release-3-7-5/>
+
+| Instance type | Allowlisted service (YouTube, Twitch, VRCDN, …) | Other domain |
+|---|---|---|
+| Public / Group Public | Plays for everyone | Plays only if the domain is in the world's allowed domains **and** the viewer enabled *Allow Untrusted URLs* |
+| All other instance types | Plays for everyone | Plays if the viewer enabled *Allow Untrusted URLs* |
+
+The rule applies to hardcoded URLs and to URLs users enter at runtime alike. To add domains, open vrchat.com → *My Worlds* → your world → **Edit World Info** → **Video Player Allowed Domains**, and use full domain names such as `example.com`. **[Docs]** <https://creators.vrchat.com/worlds/udon/video-players/www-whitelist/>
+
+Short links may fail because the *resolved* URL has to match an allowlisted domain. The sample sync player also doesn't handle an instance master who has *Allow Untrusted URLs* off. The docs suggest giving sync ownership to the user who requests the video. **[Docs]**
 
 ## Events on UdonSharpBehaviour
 
@@ -43,7 +58,7 @@ The `VRC.SDK3.Components.Video.VideoError` enum carries the failure reason. Valu
 
 ## Community-built players
 
-VRChat officially endorses **USharpVideo**, **VideoTXL**, and **ProTV** in the same paragraph at <https://creators.vrchat.com/worlds/udon/video-players/>. **[Docs]** Each is open-source and a useful read for understanding network-sync video patterns.
+The official video-players page points readers to **VideoTXL**, **ProTV** and **USharpVideo** as community prefabs. **[Docs]** <https://creators.vrchat.com/worlds/udon/video-players/> Its supported-hosts section also carries a disclaimer that "listings… do not constitute partnerships or endorsements". Each is open-source and a useful read for understanding network-sync video patterns.
 
 | Project | Distinctive feature | Source |
 |---|---|---|
@@ -53,7 +68,7 @@ VRChat officially endorses **USharpVideo**, **VideoTXL**, and **ProTV** in the s
 | **ProTV** (ArchiTech) | Event-driven plugin architecture. Multi-config swap. LTCGI adapters. | <https://gitlab.com/techanon/protv>, <https://protv.dev/faq> |
 | **SynMediaPlayer** | Gapless playback, automatic retry-on-failure, low-latency stream selection. | <https://github.com/synergiance/SynMediaPlayer> |
 | **VVMW / VizVid** (JLChnToZ) | Per-platform URL pairs (PC vs Quest fallback), RTSP/RTMP, request debouncing. | <https://github.com/JLChnToZ/VVMW> |
-| **USharpVideoModernUI** (DrBlackRat) | Drop-in UI replacement for USharpVideo. | <https://drblackrat.github.io/vpm-listing/> |
+| **USharpVideoModernUI** (DrBlackRat) | Drop-in UI replacement for USharpVideo. | <https://vpm.drblackrat.xyz/> |
 | **RiskiPlayer** | Modified ProTV with on-screen UI. | <https://github.com/RiskiVR/RiskiPlayer> |
 
 All **[Community]**.
@@ -78,4 +93,5 @@ Across the ecosystem, recurring designs:
 
 - [UdonSharpBehaviour → video events](../udonsharp-behaviour/video-events.md)
 - [Loading → trusted URLs](../loading/trusted-urls.md)
+- Official [Video Player Allowlist](https://creators.vrchat.com/worlds/udon/video-players/www-whitelist/), the full list of trusted video domains.
 - [References → Community Resources](../references/community-resources.md) — complete video-player index.

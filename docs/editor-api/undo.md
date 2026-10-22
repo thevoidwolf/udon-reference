@@ -1,6 +1,6 @@
 # UdonSharpUndo
 
-Static class `UdonSharpEditor.UdonSharpUndo`. Component add/remove operations that register with Unity's Undo system. Source: `Editor/Editors/UdonSharpUndo.cs`. **[Source]**
+Static class `UdonSharpEditor.UdonSharpUndo`. Component add/remove operations that register with Unity's Undo system. Source: `Editor/Editors/UdonSharpUndo.cs` (bundled at `Packages/com.vrchat.worlds/Integrations/UdonSharp/`). **[Source]**
 
 ## Methods
 
@@ -19,7 +19,7 @@ Adding a `UdonSharpBehaviour` to a GameObject in code involves:
 3. Linking proxy → backing through the hidden field.
 4. Initializing the backing's program-source reference and variable table.
 
-If any of those steps fails or isn't tracked by Unity's Undo, you end up with a corrupt state that Undo can't repair. `UdonSharpUndo` does all four atomically with full Undo recording.
+If any of those steps fails or isn't tracked by Unity's Undo, you end up with a corrupt state that Undo can't repair. `UdonSharpUndo` does all four with Undo recording (`Undo.AddComponent` + `RunBehaviourSetupWithUndo`), and in Play mode also initializes the new backing's Udon content. `AddComponent(GameObject, Type)` throws `ArgumentException` for `UdonSharpBehaviour` itself or non-U# types. **[Source]**
 
 Same logic for destruction — both halves must die together.
 
@@ -30,8 +30,8 @@ Same logic for destruction — both halves must die together.
 GameObject go = new GameObject("Hub");
 Undo.RegisterCreatedObjectUndo(go, "Create hub");
 MyHub hub = UdonSharpUndo.AddComponent<MyHub>(go);
-hub.target = someTransform;
-hub.ApplyProxyModifications(ProxySerializationPolicy.All);
+Undo.RecordObject(hub, "Set hub target");
+hub.target = someTransform;   // no ApplyProxyModifications needed in U# 1.x
 ```
 
 ```csharp

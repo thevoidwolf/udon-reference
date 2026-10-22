@@ -10,7 +10,7 @@ dl.DownloadImage(url, targetMaterial, this);
 // Texture lands via OnImageLoadSuccess
 ```
 
-See [Image Downloader](image-downloader.md) for full coverage.
+See [Image Downloader](image-downloader.md) for full coverage. That page includes per-download `IVRCImageDownload.Dispose()` (SDK 3.8.0+) for freeing textures you've replaced.
 
 ## Texture2D construction (community-known)
 
@@ -44,7 +44,7 @@ Also **[Community-known]**.
 tex.ReadPixels(Rect source, int dstX, int dstY);
 ```
 
-Reads from `RenderTexture.active`. The standard "render-target-to-Texture2D" path. **[Community-known]**
+Reads from `RenderTexture.active`. The standard "render-target-to-Texture2D" path. **[Community-known]** It's a synchronous GPU→CPU stall. If you only need the pixel data in Udon, `VRCAsyncGPUReadback` (SDK 3.2.0+) is the officially documented, non-blocking option. See [Render Textures](render-textures.md#reading-back-to-the-cpu-vrcasyncgpureadback). **[Docs]**
 
 ## What is *not* available
 

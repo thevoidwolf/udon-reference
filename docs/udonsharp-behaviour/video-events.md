@@ -19,15 +19,21 @@ public virtual void OnVideoError(VRC.SDK3.Components.Video.VideoError videoError
 
 | Event | Fires when |
 |---|---|
-| `OnVideoReady` | A URL has finished loading and the player can `Play()`. |
-| `OnVideoStart` | A new playback session begins (initial `Play` after load). |
-| `OnVideoPlay` | Playback transitions from paused → playing. |
-| `OnVideoPause` | Playback transitions from playing → paused. |
-| `OnVideoEnd` | Stream finishes (a non-looping clip reaches the end). |
-| `OnVideoLoop` | A looping stream restarts (does not fire when `Loop` is off). |
-| `OnVideoError` | The player failed to load or play. Inspect `videoError`. |
+| `OnVideoReady` | The player has loaded a new video and can `Play()`. |
+| `OnVideoStart` | Playback starts from a **stopped** state. |
+| `OnVideoPlay` | Playback starts — from a stopped state, the next video in a queue, unpausing, or player interaction. |
+| `OnVideoPause` | The player is paused. |
+| `OnVideoEnd` | Playback finishes — the end of the video *or* stopped via player interaction. |
+| `OnVideoLoop` | Looping is enabled and the player finishes a loop. |
+| `OnVideoError` | The player hit an error loading the video. Inspect `videoError`. |
 
-The `VideoError` enum's exact values are not enumerated in the official docs. **[Unverified]** Inspect at the call site.
+**[Docs]** (<https://creators.vrchat.com/worlds/udon/graph/event-nodes/>)
+
+The `VideoError` enum's values are not listed in the official docs. The SDK enum is commonly seen as `Unknown`, `InvalidURL`, `AccessDenied`, `PlayerError`, `RateLimited`. **[Unverified]** Check in your IDE.
+
+Common causes of `OnVideoError`: **[Docs]**
+- **Rate limit** — each user may load a new video URL only once every **5 seconds**, globally across all video players (default URLs included).
+- **Untrusted URL** — domains outside the allowlist need "Allow Untrusted URLs". In Public / Group Public instances, untrusted domains are blocked unless they're on the world's own allowlist (set on the VRChat website; announced with SDK 3.7.5). See [Loading → trusted URLs](../loading/trusted-urls.md).
 
 ## Minimal player skeleton
 

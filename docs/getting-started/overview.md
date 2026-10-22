@@ -25,9 +25,11 @@ A serialized asset on disk that contains compiled Udon Assembly bytecode plus ty
 A register-based virtual machine inside the VRChat client. It executes Udon Assembly opcodes. The VM's API surface is restricted to an internal **allowlist** of methods on .NET / Unity / VRChat SDK types. Calls outside the allowlist either fail to compile (UdonSharp catches them at build time) or throw at runtime.
 
 ### UdonSharpBehaviour (the proxy)
+UdonSharp ships inside the Worlds SDK at `Packages/com.vrchat.worlds/Integrations/UdonSharp/` (since SDK 3.4.0). **[Docs]**
+
 Your C# class derives from `UdonSharp.UdonSharpBehaviour`. It is itself a `MonoBehaviour` so Unity can serialize its fields, draw an inspector, and survive prefab operations. It also holds a hidden reference to its **backing** `UdonBehaviour` — the runtime component on the same GameObject that actually executes the compiled program.
 
-At runtime, only the backing exists. Inspector edits flow from proxy → backing via `UdonSharpEditorUtility.CopyProxyToUdon`.
+At runtime, only the backing exists. In edit mode the proxy's serialized fields are the source of truth; UdonSharp copies them into the backing (`UdonSharpEditorUtility.CopyProxyToUdon`) automatically when the scene is processed for Play mode or a build. **[Source]** `Editor/UdonSharpEditorManager.cs`
 
 ## Lifecycle in one sentence
 
@@ -45,7 +47,7 @@ That sentence captures three out of four interesting points. The fourth is that 
 ## What it does *not* do
 
 - It is **not** a Unity sandbox. You're still in the regular Unity Editor and can write arbitrary `#if UNITY_EDITOR` code for editor tooling that runs outside Udon.
-- It is **not** a general C# subset. Familiar features (`async`/`await`, generics in user code, LINQ, reflection, threads) are absent. See [Compiler constraints](../compiler/README.md).
+- It is **not** a general C# subset. Familiar features (`async`/`await`, lambdas, `try`/`catch`, generic `UdonSharpBehaviour`s, `List<T>`, LINQ, reflection, threads) are absent. See [Compiler constraints](../compiler/README.md).
 - It is **not** managed by VRChat's allowlist directly — the U# compiler tries to track it, but the runtime is authoritative.
 
 ## Two layers of API

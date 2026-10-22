@@ -1,6 +1,6 @@
 # GameObject Lifecycle
 
-How to create, destroy, parent, and otherwise manipulate GameObjects from Udon. Udon's main constraint: **you cannot synthesize a GameObject from raw nothing.** Everything you spawn must already exist as a GameObject in the scene at load time.
+How to create, destroy, parent, and otherwise manipulate GameObjects from Udon. Udon's main constraint: **you cannot synthesize a GameObject from raw nothing.** Everything you spawn is a clone of a GameObject your behaviour already references (conventionally a disabled template placed in the scene).
 
 ## Pages
 
@@ -20,10 +20,11 @@ How to create, destroy, parent, and otherwise manipulate GameObjects from Udon. 
 | Spawnable that anyone can request and everyone sees | [VRCObjectPool](../networking/object-pool.md) |
 | Per-player automatic instance | `VRCPlayerObject` + `VRCEnablePersistence` |
 | Mass procedural geometry without GameObjects | `VRCGraphics.DrawMeshInstanced` (see [Graphics](../graphics/README.md)) |
+| Hide/disable instead of destroy | `SetActive(false)`, or `component.enabled = false` on any `Behaviour` (SDK 3.10.2+) |
 
 ## The "no AddComponent at runtime" rule
 
-Udon does not let you call `gameObject.AddComponent<T>()` for *any* type — not `MeshFilter`, not `Collider`, not `Rigidbody`, not `UdonBehaviour`. Whatever components your spawned GameObject needs **must already be on the template** in the scene.
+Udon does not let you call `gameObject.AddComponent<T>()` for *any* type — not `MeshFilter`, not `Collider`, not `Rigidbody`, not `UdonBehaviour`. Whatever components your spawned GameObject needs **must already be on the template**. **[Community-known]** (`UdonSharpUndo.AddComponent` exists but is an *editor-scripting* API only. **[Docs]**)
 
 This is the single most surprising constraint coming from regular Unity development. It shapes how you author worlds: instead of building objects out of parts, you build "the most general version of the thing" once, place it disabled in the scene, and clone it at runtime.
 

@@ -10,7 +10,7 @@ Static class `VRC.SDKBase.VRCShader`. Pushes values into **global** shader unifo
 int PropertyToID(string propertyName);
 ```
 
-Returns a stable int ID for a shader property name. **Call this once at `Start()` and cache the ID** — name → ID is a hash computation, the ID setters are fast.
+Returns a stable int ID for a shader property name. **Call this once at `Start()` and cache the ID** — the ID never changes, even between different materials and shaders. **[Docs]**
 
 ```csharp
 int _scoreId;
@@ -31,7 +31,7 @@ All variants take the cached int ID returned from `PropertyToID`:
 ```csharp
 void SetGlobalFloat(int id, float value);
 void SetGlobalFloatArray(int id, float[] values);
-void SetGlobalInteger(int id, int value);      // stored as float — Unity bug per VRC docs
+void SetGlobalInteger(int id, int value);      // true integer since SDK 3.9.0 (see below)
 void SetGlobalColor(int id, Color value);
 void SetGlobalVector(int id, Vector4 value);
 void SetGlobalVectorArray(int id, Vector4[] values);
@@ -41,6 +41,12 @@ void SetGlobalTexture(int id, Texture value);
 ```
 
 **[Docs]**
+
+### `SetGlobalInteger` fix (SDK 3.9.0+)
+
+Before SDK 3.9.0, `SetGlobalInteger` stored the value as a `float` (a Unity bug workaround), so large values and bit patterns were mangled. Since 3.9.0 it calls the correct integer variant of the backing `UnityEngine.Shader` function, **preserving bit patterns** — you can pack flags/IDs into an `int`/`uint` shader global. **[Docs]** <https://creators.vrchat.com/releases/release-3-9-0/>
+
+Note: the VRCGraphics docs page still carries the old "still sets the value as `float` for now" sentence; the 3.9.0 release note supersedes it. If you must support worlds built on older SDKs, use `SetGlobalFloat` instead.
 
 ## Globals leak to avatars
 
@@ -96,9 +102,46 @@ void LateUpdate() {
 
 Shaders can then use `_UdonPlayerPositions[i]` for proximity effects.
 
-## `_VRChat`-prefixed globals are reserved
+## VRChat shader globals
 
-VRChat reserves `_VRChat*`-prefixed shader globals for its own built-ins (`_VRChatMirrorMode`, `_VRChatCameraMode`, `_VRChatMirrorCameraPos`, `_VRChatTime`). Do **not** use that prefix for your own values. **[Docs]** <https://creators.vrchat.com/worlds/udon/vrc-graphics/vrchat-shader-globals/>
+VRChat reserves the `_VRChat*` prefix as a protected namespace — new (including undocumented) variables may appear at any time. Do **not** use that prefix for your own values. **[Docs]** <https://creators.vrchat.com/worlds/udon/vrc-graphics/vrchat-shader-globals/>
+
+These are set by the client and readable in any world or avatar shader (no Udon needed): **[Docs]**
+
+| Variable | Type | Contents |
+|---|---|---|
+| `_VRChatCameraMode` | `float` | `0` normal, `1` VR handheld camera, `2` desktop handheld camera, `3` screenshot. |
+| `_VRChatCameraMask` | `uint` | `cullingMask` of the active camera; valid when `_VRChatCameraMode != 0`. |
+| `_VRChatMirrorMode` | `float` | `0` not in mirror, `1` mirror viewed in VR, `2` mirror viewed on desktop. |
+| `_VRChatFaceMirrorMode` | `float` | `1` while rendering the face mirror. |
+| `_VRChatMirrorCameraPos` | `float3` | World-space mirror camera position (eye-centred); `(0,0,0)` outside mirrors. |
+| `_VRChatScreenCameraPos` / `_VRChatPhotoCameraPos` | `float3` | Screen / handheld camera world position; `(0,0,0)` when inactive. |
+| `_VRChatScreenCameraRot` / `_VRChatPhotoCameraRot` | `float4` | Same, as a quaternion; `(0,0,0,0)` when inactive. |
+
+### Time globals (SDK 3.10.2+)
+
+Four `uint` globals expose time to shaders (clocks, animation sync). **[Docs]** <https://creators.vrchat.com/releases/release-3-10-2/>
+
+| Variable | Contents |
+|---|---|
+| `_VRChatTimeUTCUnixSeconds` | Lower 32 bits of UTC Unix time in seconds (treat as unsigned). |
+| `_VRChatTimeNetworkMs` | Synced network time in ms — same value as `Networking.GetServerTimeInMilliseconds()`. Can wrap; use only for offsets/sync. |
+| `_VRChatTimeEncoded1` | Bit-packed UTC hour/minute, shared second, local hour/minute. |
+| `_VRChatTimeEncoded2` | Bit-packed millisecond, timezone-offset sign bit and offset (seconds). |
+
+"Local" time is always the **observer's** time (respecting their preferred-timezone setting), not the avatar wearer's. Decode with the SDK's helper header:
+
+```c
+#include "Packages/com.vrchat.base/ShaderLibrary/VRCTime.cginc"
+
+uint VRC_GetUTCUnixTimeInSeconds();
+uint VRC_GetNetworkTimeInMilliseconds();
+void VRC_GetUTCTime(out uint hours, out uint minutes, out uint seconds, out uint milliseconds);
+void VRC_GetLocalTime(out uint hours, out uint minutes, out uint seconds, out uint milliseconds);
+int  VRC_GetTimezoneOffsetSeconds();
+```
+
+**[Docs]** — see the official page for exact bit ranges.
 
 ## AudioLink — the canonical `_AudioTexture` consumer
 
@@ -113,10 +156,13 @@ Texture layout:
 
 Avatar shaders and world shaders can read this texture identically — that's the whole point of `_AudioTexture` being globally allowlisted.
 
+**Toon Standard support (SDK 3.10.5+):** VRChat's built-in `Toon Standard` shader can react to AudioLink (Pulse / Scroll / Bar effects, including on mobile) — it only works in worlds that include the AudioLink community prefab, with a "Fallback Mode" for worlds without it. **[Docs]** <https://creators.vrchat.com/releases/release-3-10-5/>
+
 **Quest caveat:** AudioLink requires synchronous GPU readback on Quest (no async readback there), which the docs explicitly recommend against. **[Community]** <https://github.com/llealloo/audiolink>
 
 ## See also
 
 - [VRCGraphics](vrc-graphics.md)
+- [Camera & Quality Settings](camera-and-quality-settings.md) — Udon-side counterpart of the camera globals.
 - [Materials](materials.md) — `Material.SetFloat/SetColor` for per-material uniforms (not global).
 - [References → Community Resources](../references/community-resources.md) — AudioLink, LTCGI, shader projects.

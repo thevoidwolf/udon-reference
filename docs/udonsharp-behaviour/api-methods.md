@@ -1,6 +1,6 @@
 # API Methods
 
-Concrete (non-virtual) methods and properties declared on `UdonSharpBehaviour`. Source: `Packages/com.vrchat.UdonSharp/Runtime/UdonSharpBehaviour.cs`.
+Concrete (non-virtual) methods and properties declared on `UdonSharpBehaviour`. Source: `UdonSharp/Runtime/UdonSharpBehaviour.cs` (bundled in the Worlds SDK since 3.4.0; see [README → Source](README.md#source)).
 
 ---
 
@@ -39,20 +39,41 @@ Prefer direct method calls in U#. `SendCustomEvent` is most useful for:
 public void SendCustomNetworkEvent(NetworkEventTarget target, string eventName)
 ```
 
-Networked variant. The target method is invoked on every client identified by `target`.
+Networked variant. The target method is invoked on every client identified by `target`. **[Source]**
 
-**Rules:**
-- The target method must be `public` and no-arg.
-- **Methods whose name begins with `_` are non-networkable** and will not be invoked over the network. (This is the standard pattern for "private" helpers you don't want exposed via network.)
-- Rate-limited by the VRChat client; spamming will silently drop events.
+**(SDK 3.8.1+) Parameters.** Up to **8** arguments of any syncable type can follow `eventName`; the receiver must be marked `[NetworkCallable]`. The official docs show both call forms: **[Docs]**
 
-`NetworkEventTarget` enum (`VRC.Udon.Common.Interfaces.NetworkEventTarget`):
+```csharp
+using VRC.SDK3.UdonNetworkCalling;
+using VRC.Udon.Common.Interfaces;
+
+NetworkCalling.SendCustomNetworkEvent(this, NetworkEventTarget.All, nameof(PrintMessage), "VRCat", 11);
+this.SendCustomNetworkEvent(NetworkEventTarget.All, nameof(PrintMessage), "VRCat", 11);
+
+[NetworkCallable]
+public void PrintMessage(string name, int age) { /* ... */ }
+```
+
+The `this.` prefix in the docs suggests the parameterised overloads are extension methods rather than members of `UdonSharpBehaviour`; their exact declared signatures aren't documented. **[Unverified]** Argument types must match the declared parameters exactly or sending fails; `null` arrives as `default(T)`. **[Docs]**
+
+**Rules (receiving method):** **[Docs]**
+- Must be `public`; not `static`, `virtual` or `override`; not overloaded; no return value. With parameters: max 8, syncable types only, no `params`, no default values.
+- Should carry [`[NetworkCallable]`](../attributes/network-callable.md) (optionally `[NetworkCallable(maxEventsPerSecond: X)]`, 1–100, **default 5/s**). Parameterless public methods without it still work as **legacy events**, which use GameObject-wide (`SendMessage`-like) targeting instead of per-component targeting.
+- **Methods whose name begins with `_` are not callable over the network** — *unless* they carry `[NetworkCallable]`, which overrides the underscore rule.
+- The **receiving behaviour's sync mode must not be `None`**.
+- Events over the rate limit are **queued** locally (not dropped), and order is preserved per sender, except that an event held back by its own rate limit can be overtaken by other events. The server may drop events only in edge cases (e.g. mixed world versions with stricter limits). Total parameter data per event is capped at 16 KB.
+
+`NetworkEventTarget` enum (`VRC.Udon.Common.Interfaces.NetworkEventTarget`): **[Docs]**
 | Value | Effect |
 |---|---|
-| `All` | All players in the instance. |
+| `All` | All players in the instance (the sender runs it immediately, locally). |
+| `Others` | All players except the sender. **(SDK 3.8.1+)** |
 | `Owner` | The current owner of this GameObject. |
+| `Self` | Loopback — only the sender; bypasses rate limiting. **(SDK 3.8.1+)** |
 
-**[Source]** stubs the call locally (which is enough for the U# editor; the real VRChat runtime injects the network dispatch).
+Inside the receiver, `NetworkCalling.CallingPlayer` identifies the sender — see [Networking events](networking-events.md#receiving-custom-network-events).
+
+**[Source]** stubs the call locally (which is enough for the U# editor; the real VRChat runtime injects the network dispatch). Full model: [Networking → custom network events](../networking/custom-network-events.md).
 
 ### `SendCustomEventDelayedSeconds`
 
@@ -65,10 +86,12 @@ public void SendCustomEventDelayedSeconds(
 
 Schedules `eventName` to fire after at least `delaySeconds` of real time.
 
-- `delaySeconds = 0` fires **next frame**, not this frame.
-- `eventTiming` selects which frame phase to fire on. Values: `Update` (default), `LateUpdate`.
+- `delaySeconds = 0` fires in the same frame *or* the next frame, depending on when you call it (see the frame-count note below). **[Docs]**
+- `eventTiming` selects which frame phase to fire on: `Update` (default), `LateUpdate`, and **(SDK 3.10.2+)** `FixedUpdate` and `PostLateUpdate`. **[Docs]**
 
 **[Source]** — the body is a stub; the runtime fills it in.
+
+There is no way to cancel a pending delayed event. **(SDK 3.10.4+)** `VRCTween.DelayedCall` behaves like `SendCustomEventDelayedSeconds` but returns a handle you can `Kill()`. **[Docs]** <https://creators.vrchat.com/worlds/udon/vrctween/virtual-tweens/#delayedcall>
 
 ### `SendCustomEventDelayedFrames`
 
@@ -79,7 +102,7 @@ public void SendCustomEventDelayedFrames(
     VRC.Udon.Common.Enums.EventTiming eventTiming = VRC.Udon.Common.Enums.EventTiming.Update)
 ```
 
-Same shape but frame-based. `delayFrames` of 0 and 1 both fire next frame.
+Same shape but frame-based. Minimum delay is 1 frame; `delayFrames` of 0 and 1 behave the same. **[Source]** **[Docs]** Unity's frame count advances at `Update`, so if you call this *before* `Update` (e.g. from `Start` or an input event) the delay can be one frame shorter than expected. **[Docs]**
 
 ---
 
@@ -94,8 +117,8 @@ public void RequestSerialization()
 Requests that this behaviour's synced fields be packed and broadcast.
 
 **Constraints:**
-- Only effective on behaviours whose `BehaviourSyncMode` is `Manual`. **[Docs]**
-- The caller must be the owner of the GameObject (`Networking.IsOwner(gameObject)`).
+- Only effective on behaviours whose `BehaviourSyncMode` is `Manual`. **[Docs]** **[Source]**
+- The caller must be the owner of the GameObject (`Networking.IsOwner(gameObject)`). **[Source]**
 - After the broadcast attempt, `OnPostSerialization(SerializationResult)` fires locally — check `result.success` to detect oversize packets.
 
 **[Source]** stub.
@@ -151,7 +174,18 @@ When `true`, the `Interact()` event will not fire on this behaviour and the on-h
 public string InteractionText { get; set; }
 ```
 
-Tooltip text displayed to other players when they aim at this object. Default is "Use". **[Source]**
+The text shown in the interact tooltip when a player aims at this object. Default is "Use". **[Source]**
+
+---
+
+## Component state (SDK 3.10.2+)
+
+```csharp
+public bool enabled { get; set; }            // inherited from UnityEngine.Behaviour
+public bool isActiveAndEnabled { get; }
+```
+
+Allowlisted in U# and Graph for everything deriving from `UnityEngine.Behaviour`, including U# behaviours. Does **not** work through a field typed as `Behaviour` that points at an `UdonSharpBehaviour` — type the field as your U# class. **[Docs]** (3.10.2 release notes)
 
 ---
 
@@ -176,4 +210,5 @@ These parameterless legacy event signatures are compile errors. Use the `VRCPlay
 
 - [Type identity](type-identity.md) — `GetUdonTypeID` / `GetUdonTypeName`.
 - [Networking → custom network events](../networking/custom-network-events.md) — the full SendCustomNetworkEvent model.
+- [Networking events](networking-events.md) — `[NetworkCallable]` receivers and `NetworkCalling.CallingPlayer`.
 - [Attributes → FieldChangeCallback](../attributes/field-change-callback.md) — how SetProgramVariable interacts with property setters.

@@ -1,12 +1,12 @@
 # Unsupported Features
 
-C# and Unity features the UdonSharp compiler rejects. Most of these have a [workaround](workarounds.md).
+C# and Unity features the UdonSharp compiler rejects. Most of these have a [workaround](workarounds.md). Quoted error messages come from the compiler bundled in SDK 3.10.3 (`Integrations/UdonSharp/Editor/`). **[Source]** Syntax the binder has no handler for fails with "UdonSharp does not currently support node type '…'".
 
 ## Language features
 
 ### Generics in user code
-- **No generic methods.** `T DoThing<T>(T x)` is rejected.
-- **No generic classes.** `class Bag<T> : UdonSharpBehaviour` is rejected.
+- **No generic methods on behaviours.** `T DoThing<T>(T x)` declared in a `UdonSharpBehaviour` is rejected: "Generic method declarations on UdonSharpBehaviours are not currently supported, consider using a non-UdonSharpBehaviour class". Generic *static* helpers in a separate static class do compile — see [Supported features](supported-features.md#methods). **[Source]** / **[Code-confirmed]**
+- **No generic behaviours.** `class Bag<T> : UdonSharpBehaviour` cannot have a program asset ("Generic U# behaviours cannot have an associated U# program asset"). **[Source]**
 - **Most generic standard-library types are blocked:** `List<T>`, `Dictionary<TKey, TValue>`, `HashSet<T>`, `Queue<T>`, `Stack<T>`, `IEnumerable<T>`, `IEnumerator<T>`, `Lazy<T>`, `Nullable<T>`.
 
 A few specific generics on Unity API are allowed because they have non-generic alternatives the compiler can map (e.g. `GetComponent<T>()`).
@@ -35,13 +35,18 @@ A few specific generics on Unity API are allowed because they have non-generic a
 
 ### Patterns / modern C#
 - `switch` patterns (`x switch { ... }`).
-- Pattern matching with `is T t`.
+- Pattern matching with `is T t`, `is null`, property patterns.
+- Plain `is` / `as` type tests (`x is Foo`, `x as Foo`) — no binder support. **[Source]**
+- `?.` null-conditional access (`a?.b`). **[Source]**
+- Object and collection initializers (`new Foo { X = 1 }`) — "U# Does not yet support initializer lists". Array initializers (`int[] a = { 1, 2 };`) are fine. **[Source]**
 - Tuples (`(int, string)`, `ValueTuple`).
 - Record types.
 - `init` accessors.
 - `with` expressions.
 - Top-level statements.
-- Local functions.
+- Local functions — "Local method declarations are not currently supported by UdonSharp". **[Source]**
+- Nested type declarations (a `class`/`enum` declared inside your behaviour) — "Nested type declarations are not currently supported by U#". Declare enums at namespace level. **[Source]**
+- Partial methods. **[Source]**
 - Range / index operators (`a[1..^1]`).
 
 ### Lambdas / delegates
@@ -50,16 +55,20 @@ A few specific generics on Unity API are allowed because they have non-generic a
 - No `event` declarations on `UdonSharpBehaviour`s.
 
 ### Other
-- `ref` / `out` parameters in user-defined methods, except where required by API contracts (e.g. `DataDictionary.TryGetValue`).
+- **Static fields** on your own types (incl. `static readonly`) — "Static fields are not yet supported on user defined types". `const` is fine. **[Source]**
+- Hiding a base-class field in a derived behaviour — "U# does not yet support hiding base fields". **[Source]**
+- `typeof(MyBehaviour)` on user-defined types — "Cannot use typeof on user-defined types". **[Source]**
 - Custom indexers (`this[int i]`).
 - Operator overloading on user types.
 - Conversion operators (implicit/explicit) on user types.
 - Static constructors.
-- `try`/`catch`/`finally`. **No exception handling at all.**
-- `throw` statements.
-- Constructors with parameters on `UdonSharpBehaviour` subclasses.
-- `goto label` (not `goto case`).
-- `checked` / `unchecked` blocks (overflow is undefined; do your own checks).
+- `try`/`catch`/`finally` — "Try/Catch/Finally is not supported by UdonSharp since Udon does not have a way to handle exceptions". **No exception handling at all.** **[Source]**
+- `throw` statements and expressions. **[Source]**
+- **Any** constructor on `UdonSharpBehaviour` subclasses — "Constructors are not currently supported on UdonSharpBehaviours". **[Source]**
+- `goto` in any form, including `goto case`. **[Source]**
+- `checked` / `unchecked` blocks. Note numeric *casts* are always overflow-checked by U# due to Udon VM limitations. **[Docs]**
+
+(`ref` / `out` parameters on user methods **are** supported — the official feature list includes them. **[Docs]**)
 
 ## Unity / .NET API surface
 
@@ -88,7 +97,7 @@ A few specific generics on Unity API are allowed because they have non-generic a
 - `Graphics.DrawMesh` (non-instanced) — use `DrawMeshInstanced`.
 - `Graphics.DrawProcedural*`.
 - `Graphics.SetRenderTarget` — use `RenderTexture.active`.
-- `MaterialPropertyBlock` — unverified, generally believed blocked.
+- `MaterialPropertyBlock` — generally believed blocked. **[Unverified]**
 
 ### Editor-only Unity APIs
 - `UnityEditor.*` namespace — these only exist in the editor and are stripped at build time anyway. Guarded `#if UNITY_EDITOR` editor code is fine; runtime references error.
@@ -101,7 +110,7 @@ Most of the blocks fall into three categories:
 2. **VM limitations.** Generics, lambdas, async, exceptions.
 3. **VRChat-specific safety.** `AddComponent` (worlds can't grow at runtime), `Resources.Load` (no arbitrary asset loading), `SceneManager` (worlds are fixed).
 
-The U# team has gradually expanded what's allowed across versions. Always check current docs if community advice says "X doesn't work."
+The allowlist has gradually expanded across SDK versions — e.g. `enabled` / `isActiveAndEnabled` on `Behaviour` derivatives became available in **SDK 3.10.2**. **[Docs]** Always check current release notes if community advice says "X doesn't work." See [Compiler → SDK releases that changed the compiler](README.md#sdk-releases-that-changed-the-compiler).
 
 ## See also
 

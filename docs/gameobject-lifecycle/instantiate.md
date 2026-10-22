@@ -1,6 +1,6 @@
 # Instantiate
 
-UdonSharp aliases a restricted set of `Object.Instantiate` overloads to a VRChat extern via the compiler shim `UdonSharp.Lib.Internal.InstantiationShim`. Source: `Packages/com.vrchat.UdonSharp/Runtime/Libraries/CompilerInternal/InstantiationShim.cs`. **[Source]**
+UdonSharp aliases a restricted set of `Object.Instantiate` overloads to a VRChat extern (`VRCInstantiate`) via the compiler shim `UdonSharp.Lib.Internal.InstantiationShim`. Source: `Packages/com.vrchat.worlds/Integrations/UdonSharp/Runtime/Libraries/CompilerInternal/InstantiationShim.cs` (re-checked against <https://github.com/vrchat-community/UdonSharp>, U# 1.1.9). **[Source]** The Udon VM docs confirm `VRCInstantiate` is the one extern whose Udon type name is "falsified". **[Docs]** <https://creators.vrchat.com/worlds/udon/vm-and-assembly/>
 
 ## Supported overloads
 
@@ -12,14 +12,16 @@ GameObject Instantiate(GameObject original, Transform parent, bool worldPosition
 GameObject Instantiate(GameObject original, Vector3 position, Quaternion rotation, Transform parent);
 ```
 
-Each clone is **local** to the calling client. Other clients see nothing.
+Only the single-argument form is a real extern; the others are U# helpers that clone and then call `SetPositionAndRotation` / `SetParent`. Note `(original, parent)` parents with `worldPositionStays: false`, while `(original, position, rotation, parent)` sets the world pose first and then parents with `worldPositionStays: true`. **[Source]**
+
+Each clone is **local** to the calling client. Other clients see nothing. Instantiated objects "cannot be correctly synchronized … the only workaround is to use object-pooling." **[Docs]** <https://udonsharp.docs.vrchat.com/networking-tips-&-tricks/>
 
 ## Constraints
 
 | Rule | Detail |
 |---|---|
 | **GameObject only** | No generic `Instantiate<T>(T original)`. Clone the GameObject and `GetComponent` on the result. |
-| **Source must be in the scene** | Project-asset prefab references cannot be resolved at runtime. Place a disabled "template" GameObject in your scene and `Instantiate` from there. |
+| **Source must be referenced** | There is no `Resources.Load`, so the original must come from a serialized field. Placing a disabled "template" GameObject in the scene is the conventional, always-works approach. Whether a *project-asset prefab* assigned to a field instantiates correctly in-client isn't covered by the official docs — test it in Build & Test before relying on it. **[Unverified]** |
 | **No `AddComponent` afterward** | Whatever components the template has are what the clone has. |
 | **Not networked** | The new GameObject exists only on this client. For networked spawning use [`VRCObjectPool`](../networking/object-pool.md). |
 | **References survive** | If the template's `UdonBehaviour` has serialized references to other in-scene objects, the clone's components keep those references. |
@@ -53,7 +55,9 @@ void Fire() {
 
 - **Hierarchy preserved.** The clone retains the template's children. If the template has 50 child GameObjects, all 50 are cloned.
 - **Component initial state preserved.** UdonBehaviours come up with the template's serialized field values (not their compiled defaults — they preserve inspector-set values).
-- **No notification.** There is no `OnInstantiated` event on the clone. Use `Start()` (it will fire on the next frame) or call a setup method explicitly after spawning.
+- **No notification.** There is no `OnInstantiated` event on the clone. Use `Start()` or call a setup method explicitly after spawning. (ClientSim was changed in SDK 3.6.1 so Udon behaviours instantiated by other scripts "initialize right away and have variables and functions ready", matching the client. **[Docs]** (release notes))
+- **Dynamics on clones (SDK 3.10.0+).** PhysBones on objects created with `Object.Instantiate()` simulate properly (before 3.10.0 they stayed rigid), but their grabs and poses do **not** sync between clients — same as Udon behaviours on instantiated objects. **[Docs]** (release notes)
+- **`GetComponent` on clones.** Works on standard components, U# behaviours, and (since SDK 3.7.5) all TextMeshPro components. **[Docs]** (release notes)
 - **Garbage collection.** Clones not actively cleaned up via `Destroy()` accumulate. Long-running worlds that spawn frequently must pair every `Instantiate` with an eventual `Destroy`.
 
 ## What you *cannot* do
@@ -61,7 +65,7 @@ void Fire() {
 ```csharp
 GameObject go = new GameObject();                                  // blocked
 gameObject.AddComponent<MeshFilter>();                             // blocked
-var clone = Instantiate(prefabFromProjectAssets);                  // resolves to null/error
+var o = Resources.Load<GameObject>("Bullet");                      // blocked (no Resources API)
 var c = Instantiate(originalComponent);                            // blocked (GameObject only)
 ```
 

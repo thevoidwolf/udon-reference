@@ -28,14 +28,14 @@ m.bindposes   = ...;
 The `Set*` variants also work and are equivalent:
 
 ```csharp
-m.SetVertices(List<Vector3> vertices);
+m.SetVertices(Vector3[] vertices);       // array overload; U# has no List<T>
 m.SetTriangles(int[] triangles, int submesh);
 m.SetNormals(...);
 m.SetUVs(int channel, ...);
 m.SetColors(...);
 ```
 
-**[Community-known]** for all of the above.
+**[Community-known]** for all of the above. Use the array overloads. Unity's `List<T>` overloads can't be called because UdonSharp doesn't support generic collections such as `List<T>`.
 
 ## Recalculation helpers
 

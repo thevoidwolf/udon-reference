@@ -5,9 +5,17 @@
 ## Player access
 
 ```csharp
-static VRCPlayerApi LocalPlayer { get; }   // null in editor before init
-static bool IsMaster { get; }              // true if local player is master
+static VRCPlayerApi LocalPlayer { get; }     // null in editor before init
+static bool IsMaster { get; }                // true if local player is master
+static VRCPlayerApi Master { get; }          // SDK 3.7.0+ — current instance master; always valid
+static VRCPlayerApi InstanceOwner { get; }   // SDK 3.7.0+ — instance owner, or null if they aren't in the instance
+static bool IsInstanceOwner { get; }         // true if the local player is the instance owner
 ```
+
+`Master` and `InstanceOwner` signatures are verbatim from the 3.7.0 release notes; descriptions from the Network Components page. **[Docs]** <https://creators.vrchat.com/releases/release-3-7-0>, <https://creators.vrchat.com/worlds/udon/networking/network-components>
+
+- **Master** is the default owner of networked objects. It changes when the current master leaves (chosen server-side — don't predict who). React with `public override void OnMasterTransferred(VRCPlayerApi newMaster)` (SDK 3.7.0+). Don't use master status for security gating. **[Docs]**
+- **Instance owner** is the creator of an Invite / Invite+ / Friends / Friends+ instance and never changes. `IsInstanceOwner` is always `false` in Group, Public, and Build & Test instances. Prefer this over master for "host" privileges. **[Docs]**
 
 ## Ownership
 
@@ -23,11 +31,19 @@ See [Networking → ownership](../networking/ownership.md) for the full transfer
 ## Network state
 
 ```csharp
-static bool IsNetworkSettled { get; }   // true after initial state reconciliation
-static bool IsClogged { get; }          // true if the connection is backed up
+static bool IsNetworkSettled { get; }   // true once all instance data has been deserialized and applied
+static bool IsClogged { get; }          // true when too much data is trying to leave the client
 ```
 
-`IsNetworkSettled` is the right "world has settled" check at startup. **[Docs]**
+`IsNetworkSettled` is the right "world has settled" check at startup. **[Docs]** <https://creators.vrchat.com/worlds/udon/networking/network-components>
+
+### Simulation time
+
+```csharp
+static float SimulationTime(VRCPlayerApi player);   // float [Docs]; docs say it also works for networked objects — that overload (GameObject?) [Unverified]
+```
+
+Returns how far back in time a player or networked object is being simulated (used internally by `VRCObjectSync` and players). `Time.realtimeSinceStartup - Networking.SimulationTime(player)` gives that player's current replication delay in seconds. **[Docs]** <https://creators.vrchat.com/worlds/udon/networking/network-components>
 
 ## Server time
 
@@ -48,6 +64,20 @@ static Component FindComponentInPlayerObjects(VRCPlayerApi player, Component ref
 ```
 
 See [Persistence → Player Objects](../persistence/player-objects.md).
+
+## Persistence storage information
+
+The docs place the persistence storage-usage methods in `VRC.SDKBase.Networking` too **[Docs]**:
+
+```csharp
+static int  GetPlayerDataStorageLimit();                         // SDK 3.10.0+, bytes
+static int  GetPlayerDataStorageUsage(VRCPlayerApi target);      // SDK 3.10.0+, last computed usage
+static int  GetPlayerObjectStorageLimit();                       // bytes
+static int  GetPlayerObjectStorageUsage(VRCPlayerApi target);    // last computed usage
+static void RequestStorageUsageUpdate();                         // SDK 3.10.0+, local player; result via OnPersistenceUsageUpdated
+```
+
+See [Persistence → PlayerData](../persistence/player-data.md#storage-information-sdk-3100).
 
 ## Instantiation
 
@@ -97,5 +127,6 @@ public override void OnDeserialization() {
 ## See also
 
 - [Networking](../networking/README.md)
+- [Networking → Debugging & stats](../networking/debugging-and-stats.md) — `IsClogged`, network stats.
 - [VRCPlayerApi](vrc-player-api.md)
 - [Persistence → Player Objects](../persistence/player-objects.md)

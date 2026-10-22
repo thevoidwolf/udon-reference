@@ -7,16 +7,16 @@ This section is for readers who have not written an UdonSharp world before. If y
 | Page | What's in it |
 |---|---|
 | [Overview](overview.md) | What Udon, U#, and the VM actually are. |
-| [Installation](installation.md) | Project setup via the VRChat Creator Companion, Unity version, package layout. |
+| [Installation](installation.md) | Project setup via the VRChat Creator Companion (or ALCOM), Unity version, where UdonSharp lives inside the Worlds SDK. |
 | [First Script](first-script.md) | A minimal, working U# script with explanations. |
 
 ## TL;DR for impatient readers
 
-1. Install Unity **2019.4.31f1** (exact version — newer Unity is not supported by the VRChat World SDK as of writing).
-2. Install the **VRChat Creator Companion** from <https://vrchat.com/home/download>.
-3. Create a new **World** project with the UdonSharp package included.
-4. In the project, right-click in the Project window → `Create` → `U# script`. This creates both a `.cs` file and a paired Udon Program Asset.
-5. Add an `UdonBehaviour` component to a GameObject in your scene and assign the Program Asset (or drag the `.cs` directly).
+1. Install Unity **2022.3.22f1** — the exact version VRChat uses as of SDK 3.10.5. Other Unity versions (including newer 2022.3 patches that Unity Hub may recommend) are not supported. **[Docs]** <https://creators.vrchat.com/sdk/upgrade/current-unity-version/>
+2. Install the **VRChat Creator Companion** (VCC) from <https://vrchat.com/home/download>. It installs the correct Unity version for you. (Windows only; the community-made [ALCOM](installation.md#alternative-alcom-community) also runs on macOS/Linux.)
+3. Create a new **World** project. UdonSharp has been **bundled inside the Worlds SDK** (`com.vrchat.worlds`) since SDK 3.4.0, so every World project already has it — there is no separate UdonSharp package to add. **[Docs]** <https://creators.vrchat.com/releases/release-3-4-0/>
+4. In the Project window, right-click → `Create` → `U# Script`, then pick a file name in the save dialog. This creates both a `.cs` file and a paired Udon Program Asset (`.asset`). **[Source]**
+5. Drag the `.cs` onto a GameObject (or use **Add Component**). UdonSharp adds your class as a component and creates the hidden backing `UdonBehaviour` for you — see [Proxy ↔ Backing](../editor-api/proxy-backing.md).
 6. Write your code by overriding methods on `UdonSharpBehaviour` — see [First Script](first-script.md).
 
 ## What this section will *not* teach

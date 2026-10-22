@@ -1,10 +1,12 @@
 # PlayerData
 
-Static class `VRC.SDK3.Persistence.PlayerData`. Key-value storage scoped per player per world. **[Docs]**
+Static class `VRC.SDK3.Persistence.PlayerData` (SDK 3.7.4+, Nov 2024). Key-value storage scoped per player per world. **[Docs]** <https://creators.vrchat.com/worlds/udon/persistence/player-data>
+
+All UdonBehaviours in a world share the same PlayerData. Writes sync automatically (independent of any behaviour's sync mode); remote users receive only the final value of rapid changes, and **any** change re-sends all of the local player's PlayerData — roughly the bandwidth of one Manual-sync behaviour. **[Docs]**
 
 ## Setters (local player only)
 
-All have signature `void Set<Type>(string key, <Type> value)`. They write the **local** player's data — calls referencing remote players' data silently fail.
+All have signature `void Set<Type>(string key, <Type> value)`. There is no player parameter: they always write the **local** player's data; remote players' data cannot be set. You can overwrite a key with a value of a different type. **[Docs]**
 
 ```csharp
 PlayerData.SetString(string key, string value);
@@ -28,7 +30,7 @@ PlayerData.SetColor     (string key, Color value);
 PlayerData.SetColor32   (string key, Color32 value);
 ```
 
-No success indicator. **Cannot be called from `OnPlayerLeft`.**
+No success indicator. **Cannot save from the local player's `OnPlayerLeft`.** **[Docs]**
 
 ## Getters (any player)
 
@@ -54,24 +56,20 @@ PlayerData.GetColor     (VRCPlayerApi player, string key) → Color
 PlayerData.GetColor32   (VRCPlayerApi player, string key) → Color32
 ```
 
-These **throw** if the key is missing. Always pair with `HasKey` or use `TryGet*`.
+A missing key returns the type's **default value** (e.g. `GetInt` → `0`); so does reading a key with the wrong type. Use `TryGet*` or `HasKey` / `TryGetType` when you need to tell "missing" from "default". **[Docs]** (Earlier revisions of this page claimed getters throw — they don't.)
 
 ## TryGetters
 
 ```csharp
-PlayerData.TryGetString(VRCPlayerApi player, string key, out string value, out bool success) → bool
-PlayerData.TryGetInt   (VRCPlayerApi player, string key, out int    value, out bool success) → bool
+bool PlayerData.TryGetString(VRCPlayerApi player, string key, out string value)
+bool PlayerData.TryGetInt   (VRCPlayerApi player, string key, out int    value)
 // ... same pattern for every type
 ```
 
-The two out params:
-- `value` — the read value (default-initialised on failure).
-- `success` — `true` if the key existed and the type matched.
-
-The method's return value matches `success` for compactness in `if` statements:
+The docs list the outputs as `<type> value, bool success` (Udon Graph form); in U# `value` is the `out` parameter and `success` is the return value — `true` if the key existed and the type matched. **[Docs]**
 
 ```csharp
-if (PlayerData.TryGetInt(player, "score", out int score, out _)) {
+if (PlayerData.TryGetInt(player, "score", out int score)) {
     Debug.Log($"score: {score}");
 }
 ```
@@ -84,31 +82,42 @@ System.Type GetType(VRCPlayerApi player, string key);
 bool TryGetType(VRCPlayerApi player, string key, out System.Type t);
 ```
 
-`GetType` returns the runtime type token currently stored under the key. Throws if missing — use `TryGetType` for safe access.
+`GetType` returns the type currently stored under the key. `TryGetType` returns `false` if the key doesn't exist. **[Docs]**
 
-## Storage inspection
+## Storage information (SDK 3.10.0+)
+
+The docs place these on `VRC.SDKBase.Networking`, alongside the Player Object storage methods — **not** on `PlayerData`. **[Docs]**
 
 ```csharp
-int GetPlayerDataStorageLimit();                    // returns 102400 (100 KB)
-int GetPlayerDataStorageUsage(VRCPlayerApi target); // current compressed bytes; -1 if not yet loaded
-void RequestStorageUsageUpdate();                   // ask the runtime to recompute usage
+int  Networking.GetPlayerDataStorageLimit();                    // limit in bytes (100 KB per the persistence overview)
+int  Networking.GetPlayerDataStorageUsage(VRCPlayerApi target); // last *computed* usage for target
+void Networking.RequestStorageUsageUpdate();                    // recompute local player's PlayerData AND PlayerObject usage
 ```
 
-After `RequestStorageUsageUpdate`, `OnPersistenceUsageUpdated` fires when the new value is ready.
+Results of `RequestStorageUsageUpdate` arrive via `OnPersistenceUsageUpdated`. Usage values can go stale; the docs ask you **not** to call `RequestStorageUsageUpdate` frequently. **[Docs]** The exact limit value returned (e.g. `102400`) and behaviour before data has loaded are not documented. **[Unverified]**
 
 ## Events
 
-All hang off `VRC.SDK3.Persistence.PlayerData` as static `event System.Action<...>` :
+These are ordinary Udon events — in U# you `override` them on your `UdonSharpBehaviour`. (Earlier revisions of this page described them as static C# `event`s on `PlayerData`; U# can't subscribe to C# events.)
 
-| Event | Signature | Fires |
+| Event (U# override) | Fires |
+|---|---|
+| `OnPlayerRestored(VRCPlayerApi player)` | Once per player after all their persistent data (PlayerData **and** PlayerObjects) has loaded — even if they have no save data. **Wait for this before reading or writing.** |
+| `OnPlayerDataUpdated(VRCPlayerApi player, PlayerData.Info[] infos)` | End of frame whenever any player's PlayerData changed or was received. `infos` covers all of that player's keys with their state. |
+| `OnPersistenceUsageUpdated(VRCPlayerApi player)` | (SDK 3.10.0+) The player's storage usage was updated (e.g. after `RequestStorageUsageUpdate`). |
+| `OnPlayerDataStorageWarning(VRCPlayerApi player)` | (SDK 3.10.0+) Usage is **nearing** the limit. No threshold is documented. |
+| `OnPlayerDataStorageExceeded(VRCPlayerApi player)` | (SDK 3.10.0+) Usage exceeded the limit. Saves that would exceed the limit are not saved (VRChat logs an error). |
+
+**[Docs]** for all of the above. <https://creators.vrchat.com/worlds/udon/graph/event-nodes>
+
+### `PlayerData.Info`
+
+| Field | Type | Notes |
 |---|---|---|
-| `OnPlayerRestored` | `Action<VRCPlayerApi>` | Once per player after their persistent data has loaded from VRChat servers. **Wait for this before reading.** |
-| `OnPlayerDataUpdated` | `Action<VRCPlayerApi, PlayerData.Info[]>` | At end-of-frame whenever any player's PlayerData changed (local writes or remote updates). `Info` lists the changed keys. |
-| `OnPersistenceUsageUpdated` | `Action<VRCPlayerApi>` | After `RequestStorageUsageUpdate` completes — `GetPlayerDataStorageUsage` is now accurate. |
-| `OnPlayerDataStorageWarning` | `Action<VRCPlayerApi>` | Crossed ~90 KB. |
-| `OnPlayerDataStorageExceeded` | `Action<VRCPlayerApi>` | Attempted to write beyond 100 KB. The write is *not saved*. |
+| `Key` | `string` | The key name. |
+| `State` | enum | State of the key as of this update. |
 
-**[Docs]** for all of the above.
+`State` values: `Unchanged` (0), `Added` (1), `Removed` (2 — shown once then disappears; key removal isn't currently possible), `Changed` (3), `Restored` (4 — restored from persistent records, only when rejoining an instance you were previously in). **[Docs]**
 
 ## What is *not* available
 
@@ -116,18 +125,14 @@ All hang off `VRC.SDK3.Persistence.PlayerData` as static `event System.Action<..
 - `ClearAll(player)` — does not exist.
 - Atomic batch writes — no documented API.
 
-Players can wipe their own data through the VRChat web panel. World authors cannot delete keys programmatically.
+Players can wipe their own data per world or for all worlds — in-client via **Settings → Debug → User Data**, or on vrchat.com under the **Persistent Data** section of profile settings. This is irreversible. World authors cannot delete keys programmatically. **[Docs]** <https://creators.vrchat.com/worlds/udon/persistence/>
 
 ## Patterns
 
 ### Initialize on player join
 
 ```csharp
-void Start() {
-    PlayerData.OnPlayerRestored += HandleRestored;
-}
-
-void HandleRestored(VRCPlayerApi player) {
+public override void OnPlayerRestored(VRCPlayerApi player) {
     if (!player.isLocal) return;
     if (PlayerData.HasKey(player, "score")) {
         currentScore = PlayerData.GetInt(player, "score");
@@ -141,11 +146,8 @@ void HandleRestored(VRCPlayerApi player) {
 ### Watch for storage approaching the cap
 
 ```csharp
-void Start() {
-    PlayerData.OnPlayerDataStorageWarning += HandleWarning;
-}
-
-void HandleWarning(VRCPlayerApi player) {
+// SDK 3.10.0+
+public override void OnPlayerDataStorageWarning(VRCPlayerApi player) {
     if (player.isLocal) Debug.LogWarning("Persistent storage almost full");
 }
 ```
@@ -155,8 +157,9 @@ void HandleWarning(VRCPlayerApi player) {
 For a few related values, prefix the keys consistently:
 
 ```csharp
-PlayerData.SetInt   ("inv_count", inventory.Length);
-PlayerData.SetString("inv_state", VRCJson.TrySerializeToJson(inventory, JsonExportType.Minify, out var s) ? s : "");
+// inventory is a DataList
+PlayerData.SetInt   ("inv_count", inventory.Count);
+PlayerData.SetString("inv_state", VRCJson.TrySerializeToJson(inventory, JsonExportType.Minify, out DataToken json) ? json.String : "");
 ```
 
 ### Saves around player leave
@@ -170,9 +173,10 @@ public override void OnPlayerLeft(VRCPlayerApi player) {
 
 ## Caveats
 
-- Data is **compressed server-side**; the 100 KB limit refers to compressed bytes, so you may have more or less effective space depending on entropy.
+- Data is **stored compressed**; the 100 KB limit refers to compressed bytes, so effective space depends on entropy — highly compressible data can exceed 300 KB raw. **[Docs]**
 - Max key length, max string/byte[] length, and rate limits are **not documented**. Test before shipping.
 - Writes are deferred — there's no synchronous confirmation that data made it to the server.
+- **ClientSim:** since SDK 3.10.5, ClientSim no longer tries to save simulated changes to player persistence, and won't start a new simulated save while one is still running. **[Docs]** <https://creators.vrchat.com/releases/release-3-10-5>
 
 ## Community patterns
 
@@ -220,12 +224,24 @@ Old keys remain in storage but are unread. Overwriting them with the smallest po
 ### Compressed-size monitoring
 
 ```csharp
+// SDK 3.10.0+
 public override void OnPlayerDataStorageWarning(VRCPlayerApi player) {
-    // crossed ~90 KB; warn the player or trigger compaction
+    // nearing the limit (threshold undocumented); warn the player or trigger compaction
 }
 
 public override void OnPlayerDataStorageExceeded(VRCPlayerApi player) {
-    // exceeded 100 KB; the offending write was NOT saved
+    // exceeded the limit; saves that would exceed it are NOT saved
+}
+
+public void CheckUsage() {
+    Networking.RequestStorageUsageUpdate();   // sparingly
+}
+
+public override void OnPersistenceUsageUpdated(VRCPlayerApi player) {
+    if (!player.isLocal) return;
+    int used  = Networking.GetPlayerDataStorageUsage(player);
+    int limit = Networking.GetPlayerDataStorageLimit();
+    Debug.Log($"PlayerData: {used}/{limit} bytes");
 }
 ```
 

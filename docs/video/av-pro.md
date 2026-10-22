@@ -1,10 +1,10 @@
 # VRCAVProVideoPlayer
 
-`VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer` — the AVPro-backed video player. Source for the documented methods: <https://creators.vrchat.com/worlds/udon/video-players/>. **[Docs]** Where the docs are silent, members are flagged **[Community-known]**.
+`VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer` is the AVPro-backed video player. The official page <https://creators.vrchat.com/worlds/udon/video-players/> covers when to pick AVPro, live streams, rate limits and hosts. **[Docs]** It does **not** list the player's Udon members. Members below are **[Community-known]** (from the shared `BaseVRCVideoPlayer` surface used by every community player) unless tagged otherwise.
 
 ## Setup
 
-1. Drop the `AVProVideoPlayer` prefab into the scene from `VRChat SDK - Worlds/Samples/UdonExampleScene/Prefabs/VideoPlayers/`.
+1. Drop the `AVProVideoPlayer` prefab into the scene from `Packages/VRChat SDK - Worlds/Samples/UdonExampleScene/Prefabs/VideoPlayers`. **[Docs]**
 2. Configure the prefab's `Material` and `Screen` references.
 3. Add your own `UdonSharpBehaviour` that holds a `VRCAVProVideoPlayer` reference and listens to events.
 
@@ -18,7 +18,7 @@ void Pause();
 void Stop();
 ```
 
-`PlayURL` differs from `LoadURL + Play` when the source is a live stream — only `PlayURL` handles the live-stream protocol negotiation correctly.
+The docs say live streams need a graph that calls `PlayURL`. **[Docs]** In practice `LoadURL` + `Play` behaves differently on streams. **[Community-known]**
 
 ## Properties
 
@@ -27,23 +27,25 @@ void Stop();
 | `IsPlaying` | `bool` | |
 | `IsReady` | `bool` | True once the URL has loaded and the player can begin. |
 | `Loop` | `bool` (settable) | Loop the current source. |
-| `Volume` | `float` (settable, 0..1) | |
 | `EnableAutomaticResync` | `bool` (settable) | Periodic resync to compensate for clock drift on remote clients. |
+| `VideoWidth`, `VideoHeight` | `int` (read-only) | **SDK 3.6.1+**, on `BaseVRCVideoPlayer` and both subclasses. **[Docs]** <https://creators.vrchat.com/releases/release-3-6-1/> |
+| `Volume` | — | Probably **not** a player member. Volume usually goes through the `AudioSource`(s) wired to the `VRCAVProVideoSpeaker` component. **[Unverified]** |
 
 ## Time methods
 
 ```csharp
 float GetTime();          // current playhead, seconds
 void  SetTime(float t);   // seek
-float GetDuration();      // total length; -1 or 0 for live streams
+float GetDuration();      // total length; not meaningful for live streams
 ```
 
 ## Live streams
 
 - Use `PlayURL` (not `LoadURL`).
-- `GetDuration` typically returns `-1` for streams.
+- `GetDuration` returns no usable length for streams. Reports vary between `Infinity`, `0` and negative values, so check with `float.IsInfinity(d) || d <= 0`. **[Unverified]**
 - Loop has no effect on streams.
-- Supported sources: YouTube Live, Twitch, and other compatible streaming services. **[Docs]**
+- Supported sources: YouTube Live, Twitch, and some other streaming services. **[Docs]**
+- Audio: AVPro's speaker component suggests 8-channel support, but it plays only 6 channels (5.1). EAC3 7.1 works on PCVR only. **[Docs]**
 
 ## Editor preview limitation
 
@@ -51,7 +53,11 @@ AVPro does not preview inside Unity Play Mode. Use Build & Test to verify behavi
 
 ## Quest
 
-Works on Quest. URL resolution is handled by the VRChat client on Android (no client-side proxy needed in modern SDKs).
+Works on Quest. The URL resolver VRChat uses is available on Android now, so the old workarounds aren't needed. **[Docs]** Android doesn't play video from non-HTTPS hosts. **[Docs]**
+
+## Untrusted URLs
+
+Since SDK 3.7.5, public and group-public instances block non-allowlisted domains unless you add them to the world's *Video Player Allowed Domains*. See [Video → Untrusted URLs](README.md#untrusted-urls-in-public-instances-sdk-375). **[Docs]**
 
 ## Patterns
 
@@ -104,9 +110,10 @@ public class SyncedPlayer : UdonSharpBehaviour {
 }
 ```
 
-(Simplified — production worlds usually adjust for network latency more carefully.)
+(Simplified. Production worlds usually adjust for network latency more carefully. Sending a raw synced `VRCUrl` like this also runs into the untrusted-URL rules above when the requester isn't the owner.)
 
 ## See also
 
 - [UdonSharpBehaviour → video events](../udonsharp-behaviour/video-events.md)
 - [Loading → trusted URLs](../loading/trusted-urls.md)
+- [Video Player Allowlist](https://creators.vrchat.com/worlds/udon/video-players/www-whitelist/) **[Docs]**

@@ -2,7 +2,7 @@
 
 Override these on an `UdonSharpBehaviour` to receive raw input from the local player. They are dispatched only on the **local** client — there's no networking attached. **[Docs]**
 
-Source for the C# signatures: `Runtime/UdonSharpBehaviour.cs`. The bindings table is from <https://creators.vrchat.com/worlds/udon/input-events/>.
+Source for the C# signatures: `Runtime/UdonSharpBehaviour.cs` **[Source]** (except `OnInputMethodChanged`, which is only in the SDK-bundled copy). The bindings table is from <https://creators.vrchat.com/worlds/udon/input-events/>. These events respect the player's remapped controls. **[Docs]**
 
 > **Menu gotcha:** Udon cannot detect input while a VRChat menu is open (main menu, quick menu, text input). Opening a menu releases held inputs; closing it triggers held *Unity* inputs but **not** Udon button events. **[Docs]**
 
@@ -14,10 +14,12 @@ All have signature `void Input<Name>(bool value, UdonInputEventArgs args)`. `val
 
 | Event | Desktop | VR | Notes |
 |---|---|---|---|
-| `InputJump` | Spacebar | Face button | |
-| `InputUse` | Left-click | Trigger | Same trigger that fires `Interact()` |
-| `InputGrab` | (n/a desktop) | Grip | |
-| `InputDrop` | Right-click | Grip release | |
+| `InputJump` | Spacebar | Face button (typically) | |
+| `InputUse` | Left-click | Trigger (typically) | Same trigger that fires `Interact()` |
+| `InputGrab` | Left-click | Grip | |
+| `InputDrop` | Right-click | Grip **press** on Vive wands and some WMR controllers, grip **release** on others | |
+
+**[Docs]**
 
 ```csharp
 public override void InputJump(bool value, UdonInputEventArgs args) {
@@ -30,23 +32,28 @@ public override void InputJump(bool value, UdonInputEventArgs args) {
 
 ## Axis events
 
-Float events fire (potentially) every frame the axis is non-zero. Values are clamped to `[-1, 1]`.
+Values typically range over `[-1, 1]`. **[Docs]**
 
 | Event | Desktop | VR | Notes |
 |---|---|---|---|
 | `InputMoveHorizontal` | A/D | Left stick X | Strafing |
 | `InputMoveVertical` | W/S | Left stick Y | Forward/back |
-| `InputLookHorizontal` | Mouse X | Right stick X | Look/turn |
+| `InputLookHorizontal` | Mouse X | Right stick X | Turn (VR: only without Comfort Turning) |
 | `InputLookVertical` | Mouse Y | Right stick Y | Look |
 
+**[Docs]**
+
 ```csharp
+float _lookH;
 public override void InputLookHorizontal(float value, UdonInputEventArgs args) {
-    if (Mathf.Abs(value) < 0.1f) return;  // ignore stick deadzone yourself
-    transform.Rotate(0, value * Time.deltaTime * 90f, 0);
+    _lookH = Mathf.Abs(value) < 0.1f ? 0f : value;  // apply your own deadzone
+}
+void Update() {
+    transform.Rotate(0, _lookH * Time.deltaTime * 90f, 0);
 }
 ```
 
-The documentation does not formally specify whether axis events fire every frame or only on value change; community-known behaviour is **every frame** while the axis is non-default. **[Community-known]**
+Axis events fire **on value change**, not every frame: an analog stick produces a new event per step (0 → 0.1 → 0.2 …), and Desktop keys produce whole numbers (-1, 0, 1). **[Docs]** Holding a key or a stick still therefore produces no further events — cache the last value (see the pattern below).
 
 ---
 
@@ -59,7 +66,7 @@ The documentation does not formally specify whether axis events fire every frame
 | `eventType` | `UdonInputEventType` enum | `BUTTON` or `AXIS` |
 | `boolValue` | `bool` | The button state (button events only; `false` for axis events) |
 | `floatValue` | `float` | The axis value (axis events only; `0f` for button events) |
-| `handType` | `HandType` enum | `LEFT` or `RIGHT` — the controller hand for VR input; ignored for desktop/keyboard input |
+| `handType` | `HandType` enum | `LEFT` or `RIGHT`. Also set for Desktop: mouse reports `RIGHT`, keyboard reports `LEFT`. |
 
 **[Docs]**
 
@@ -68,16 +75,20 @@ The documentation does not formally specify whether axis events fire every frame
 ## `OnInputMethodChanged`
 
 ```csharp
-public virtual void OnInputMethodChanged(VRCInputMethod method)
+public override void OnInputMethodChanged(VRCInputMethod inputMethod)
 ```
 
-Fires when the local player switches input source (e.g. picks up a controller after using a keyboard).
+Fires when the local player switches input method (e.g. keyboard → mouse, controller, touchscreen). **[Docs]**
 
-`VRCInputMethod` enum values (from official docs): `Keyboard`, `Mouse`, `Controller`, `Vive`, `ViveXr`, `Touchscreen`. **[Docs]**
+`VRC.SDKBase.VRCInputMethod` values (index in parentheses): `Keyboard` (0), `Mouse` (1), `Controller` (2), `Gaze` (3), `Vive` (5), `Oculus` (6), `ViveXR` (7), `Index` (10), `HPMotionController` (11), `Osc` (12), `QuestHands` (13), `Generic` (14), `Touch` (15), `OpenXRGeneric` (16), `Pico` (17), `SteamVR2` (18), `Embodied` (19). **[Docs]** (<https://creators.vrchat.com/worlds/udon/graph/type-nodes/#vrcsdkbasevrcinputmethod>)
+
+- Most PC VR controllers report `SteamVR2`. Switching to Quest/Pico hand tracking reports `Embodied` (finger tracking of any kind). **[Docs]**
+- `Vive` = Vive controller through SteamVR; `ViveXR` = Vive XR Elite controller via OpenXR (the prose docs spell it `ViveXr`; the type table spells it `ViveXR` — check in your IDE). **[Docs]**
+- Touchscreen input is `Touch`; there is no `Touchscreen` member. **[Docs]**
 
 ```csharp
-public override void OnInputMethodChanged(VRCInputMethod method) {
-    Debug.Log("Now using " + method);
+public override void OnInputMethodChanged(VRCInputMethod inputMethod) {
+    Debug.Log("Now using " + inputMethod);
 }
 ```
 
@@ -99,7 +110,7 @@ void Update() {
 
 ### Use deltaTime correctly for axis events
 
-The axis event fires more often than `Update`, but the actual physics step still uses `Time.deltaTime` on the receiving frame. Do not multiply axis values by `Time.deltaTime` inside the event itself; cache the value and consume it in `Update`/`LateUpdate`:
+Axis events only fire when the value *changes*, so a stick held steady produces no events. Do not move things inside the event itself; cache the value and consume it every frame in `Update`/`LateUpdate`:
 
 ```csharp
 float _moveH;
@@ -133,4 +144,4 @@ There is no first-party API for detecting controller gestures. The community pat
 
 - [Interaction events](interaction-events.md) — `Interact()` is its own event, fired only when aimed at this GameObject.
 - [Players → tracking data](../players/tracking-data.md) — for reading hand position/rotation in VR.
-- [Input & UI](../input-and-ui/README.md) — for UI-driven button input.
+- [Input & UI](../input-and-ui/README.md) — for UI-driven button input, and the allowlisted `UnityEngine.Input` members (`GetKey`, `GetAxis`, `inputString`, …).

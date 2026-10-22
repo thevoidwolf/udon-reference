@@ -2,27 +2,23 @@
 
 A per-player string-to-string store local to each player. Useful for marking players in custom states (`"team": "red"`, `"in_minigame": "true"`) without using the networking pipeline.
 
-Source: <https://creators.vrchat.com/worlds/udon/players/player-tags/>. **[Docs]**
+Source: the "Player Tag System" section of <https://creators.vrchat.com/worlds/udon/players/getting-players#player-tag-system> (the old `/players/player-tags/` URL now 404s). The docs call it "a quick-and-dirty way of assigning strings to players". **[Docs]**
 
 ## API
 
 ```csharp
 player.SetPlayerTag(string tagName, string tagValue);
-string val = player.GetPlayerTag(string tagName);   // "" if not set
-player.ClearPlayerTags();                            // wipe all tags for this player
+string val = player.GetPlayerTag(string tagName);   // unset value: not documented ("" or null) [Unverified]
+player.ClearPlayerTags();                            // remove all tags you've set on this player
 ```
 
-Plus the static helper:
-
-```csharp
-VRCPlayerApi[] withTag = VRCPlayerApi.GetPlayersWithTag(string tagName, string tagValue);
-```
+**`GetPlayersWithTag` does not work.** The docs mark it "Not currently working" — it returns a `List`, which Udon can't use. Earlier revisions of this page showed it returning `VRCPlayerApi[]`; that was wrong. Iterate players and compare `GetPlayerTag` instead (see pattern below). **[Docs]**
 
 ## Semantics
 
-- Tags are **local-only**. Setting a tag on a player only affects what the *local* client thinks. They're not networked.
+- Tags are **local-only**. Setting a tag on a player only affects what the *local* client thinks. They're not networked. **[Community-known]** (the docs don't state sync behaviour)
 - Calling `SetPlayerTag` on a remote player from your client only affects your view.
-- Empty-string value (`""`) effectively removes the tag.
+- Setting an empty-string value (`""`) is the usual way to "clear" a single tag; there is no per-tag remove. **[Community-known]**
 
 That makes them useful for one-sided "I'm tracking this" state, not for shared game state. For shared state, use `[UdonSynced]` fields or a per-player object.
 
@@ -39,9 +35,15 @@ public void EndGameFor(VRCPlayerApi p) {
     p.SetPlayerTag("minigame", "");   // clear
 }
 
+VRCPlayerApi[] _players = new VRCPlayerApi[16];
+
 void Update() {
-    var players = VRCPlayerApi.GetPlayersWithTag("minigame", "active");
-    foreach (var p in players) {
+    int n = VRCPlayerApi.GetPlayerCount();
+    if (_players.Length < n) _players = new VRCPlayerApi[n * 2];
+    VRCPlayerApi.GetPlayers(_players);          // non-allocating overload
+    for (int i = 0; i < n; i++) {
+        var p = _players[i];
+        if (!Utilities.IsValid(p) || p.GetPlayerTag("minigame") != "active") continue;
         // do per-player game-loop work for the local view
     }
 }
