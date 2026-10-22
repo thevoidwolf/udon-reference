@@ -12,7 +12,7 @@ Source: `Runtime/UdonSharpBehaviour.cs`. **[Source]**
 public virtual void Interact()
 ```
 
-Fires on the local client only when the local player presses Use while aimed at this GameObject. The GameObject must have a `Collider` (non-trigger) for the raycast to hit.
+Fires on the local client only when the local player presses Use while aimed at this GameObject. The GameObject needs both a `Collider` and an `UdonBehaviour`. **[Docs]** For 2D UI, use a `VRC Ui Shape` + `Button` instead of `Interact`. **[Docs]**
 
 ```csharp
 public override void Interact() {
@@ -34,7 +34,7 @@ When `true`, `Interact` does not fire and the on-hover outline disappears. Usefu
 public string InteractionText { get; set; }
 ```
 
-Tooltip shown to other players when they aim at this object. Default `"Use"`. **[Source]**
+Text shown in the interact tooltip when a player aims at this object. Default `"Use"`. **[Source]**
 
 You can also configure the interaction text and proximity in the inspector via the `UdonBehaviour` component fields ("Interaction Text", "Proximity").
 
@@ -57,6 +57,8 @@ public virtual void OnPickupUseUp()
 | `OnDrop` | Local player drops it (intentional release) |
 | `OnPickupUseDown` | "Use" pressed while holding |
 | `OnPickupUseUp` | "Use" released while holding |
+
+On Desktop, the two Use events require the pickup's **Auto Hold** option. **[Docs]** SDK 3.9.0 added a new Auto Hold mode that works on all input devices; existing pickups must be upgraded in the inspector to use it. **[Docs]**
 
 All four are **local-only**. Other clients see only what gets networked through `VRCObjectSync` or your own `[UdonSynced]` state. **[Source]**
 
@@ -88,6 +90,8 @@ public void Fire() { /* fires for everyone */ }
 ```
 
 For shared pickup *physics*, attach `VRCObjectSync` to the same GameObject — see [Networking → ObjectSync](../networking/object-sync.md).
+
+Related `VRCPickup` changes: adding the component auto-moves the GameObject to the `Pickup` layer again (SDK 3.10.4+), and an **Outline Renderers** property selects which renderers get the hover highlight (SDK 3.10.5+). **[Docs]**
 
 ---
 
