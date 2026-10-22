@@ -1,6 +1,6 @@
 # Instantiate
 
-UdonSharp aliases a restricted set of `Object.Instantiate` overloads to a VRChat extern (`VRCInstantiate`) via the compiler shim `UdonSharp.Lib.Internal.InstantiationShim`. Source: `Packages/com.vrchat.UdonSharp/Runtime/Libraries/CompilerInternal/InstantiationShim.cs` (re-checked against <https://github.com/vrchat-community/UdonSharp>, U# 1.1.9). **[Source]** The Udon VM docs confirm `VRCInstantiate` is the one extern whose Udon type name is "falsified". **[Docs]** <https://creators.vrchat.com/worlds/udon/vm-and-assembly/>
+UdonSharp aliases a restricted set of `Object.Instantiate` overloads to a VRChat extern (`VRCInstantiate`) via the compiler shim `UdonSharp.Lib.Internal.InstantiationShim`. Source: `Packages/com.vrchat.worlds/Integrations/UdonSharp/Runtime/Libraries/CompilerInternal/InstantiationShim.cs` (re-checked against <https://github.com/vrchat-community/UdonSharp>, U# 1.1.9). **[Source]** The Udon VM docs confirm `VRCInstantiate` is the one extern whose Udon type name is "falsified". **[Docs]** <https://creators.vrchat.com/worlds/udon/vm-and-assembly/>
 
 ## Supported overloads
 
