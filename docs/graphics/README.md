@@ -59,7 +59,7 @@ VRChat's built-in `VRCMirrorReflection` component handles per-eye rendering, lay
 
 - **Poiyomi Toon** — most popular feature-rich toon shader. **[Community]** <https://github.com/poiyomi/PoiyomiToonShader>
 - **Mochie's Unity Shaders** — Standard, water, post-processing. **[Community]** <https://github.com/MochiesCode/Mochies-Unity-Shaders>
-- **z3y / Okabintaro shaders** — Standard/Surface replacement; first to ship Quest box-projected AreaLit + LTCGI. **[Community]** <https://github.com/z3y/shaders>
+- **z3y / Okabintaro shaders** — Standard/Surface replacement; first to ship Quest box-projected AreaLit + LTCGI. **Archived** — successor is **Graphlit** (<https://github.com/z3y/Graphlit>). **[Community]** <https://github.com/z3y/shaders>
 - **Silent's Cel Shading** — lightweight, respects Unity lighting. **[Community]** <https://ask.vrchat.com/t/silents-cel-shading-shader/3234>
 
 ## See also

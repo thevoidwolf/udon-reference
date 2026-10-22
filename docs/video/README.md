@@ -68,7 +68,7 @@ The official video-players page points readers to **VideoTXL**, **ProTV** and **
 | **ProTV** (ArchiTech) | Event-driven plugin architecture. Multi-config swap. LTCGI adapters. | <https://gitlab.com/techanon/protv>, <https://protv.dev/faq> |
 | **SynMediaPlayer** | Gapless playback, automatic retry-on-failure, low-latency stream selection. | <https://github.com/synergiance/SynMediaPlayer> |
 | **VVMW / VizVid** (JLChnToZ) | Per-platform URL pairs (PC vs Quest fallback), RTSP/RTMP, request debouncing. | <https://github.com/JLChnToZ/VVMW> |
-| **USharpVideoModernUI** (DrBlackRat) | Drop-in UI replacement for USharpVideo. | <https://drblackrat.github.io/vpm-listing/> |
+| **USharpVideoModernUI** (DrBlackRat) | Drop-in UI replacement for USharpVideo. | <https://vpm.drblackrat.xyz/> |
 | **RiskiPlayer** | Modified ProTV with on-screen UI. | <https://github.com/RiskiVR/RiskiPlayer> |
 
 All **[Community]**.
