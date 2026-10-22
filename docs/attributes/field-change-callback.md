@@ -78,8 +78,11 @@ if (fieldChangeCallback != null) {
 ## Gotchas
 
 - The setter is **expected** to write the field. If you forget, the field will not be updated and the next sync packet will revert to the old value.
-- The property must be on the same class as the field (the source code does `variableField.DeclaringType.GetProperty(...)`).
-- If the property is missing or has no setter, `SetProgramVariable` silently no-ops on that field. **[Source]**
+- The property must be on the same class as the field, and its type must **match the field's type exactly**. Otherwise compilation fails with *"Target property '…' for FieldChangeCallback was not found"* or *"Target property type '…' did not match field type"*. **[Source]** (`Editor/Compiler/Binder/Symbols/UdonSharpBehaviourFieldSymbol.cs`)
+- **You can't assign the field from another behaviour** (`other._score = 5;`). That's a compile error: *"Cannot set field on U# behaviour by reference when that field has a FieldChangeCallback attribute."* Assign the property instead (`other.Score = 5;`), or use `SetProgramVariable`. **[Source]** (`BoundFieldAccessExpression.cs`)
+- In the editor-side proxy (`UdonSharpBehaviour.SetProgramVariable`), a property with no setter makes the write silently skipped. **[Source]**
+- **`OnVariableChanged` ordering.** U# builds the callback on Udon's `OnVariableChanged` mechanism: the compiler emits an `_onVarChange_<field>` event. **[Source]** (`Editor/Compiler/Assembly/AssemblyInstruction.cs`) So it runs as soon as *that* field is written during deserialization, before `OnDeserialization`, and other synced fields may not be updated yet. **[Docs]** <https://creators.vrchat.com/worlds/udon/networking/network-components/#onvariablechanged> Read only the incoming value in the setter, or defer cross-field logic to `OnDeserialization`.
+- Writing *elements* of a synced array doesn't count as a write to the field. Only reassigning the array does. **[Docs]** (same page)
 
 ## See also
 

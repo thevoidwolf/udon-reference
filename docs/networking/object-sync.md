@@ -1,6 +1,8 @@
 # VRCObjectSync
 
-`VRC.SDK3.Components.VRCObjectSync` automatically replicates a GameObject's `Transform` (position, rotation, scale) and `Rigidbody` (linear/angular velocity, gravity, kinematic). Source: VRC SDK3. **[Docs]**
+`VRC.SDK3.Components.VRCObjectSync` automatically replicates a GameObject's `Transform` and `Rigidbody` physics, including the gravity and kinematic flags it manages. **[Docs]** <https://creators.vrchat.com/worlds/components/vrc_objectsync/> · <https://creators.vrchat.com/worlds/udon/networking/network-components/#vrc-object-sync>
+
+The two official pages differ on scale: the networking page says "position, rotation scale", and the component page lists only position and rotation (plus kinematic/gravity). Don't rely on scale being synced. **[Docs]**
 
 ## When to use it
 
@@ -17,19 +19,30 @@
 
 1. Add a `VRCObjectSync` component to the GameObject.
 2. Add a `Rigidbody` if you want physics replication. Without one, only the `Transform` is synced.
-3. Make sure ownership is sensible (often `VRCPickup`'s `Auto Hold` is enough; otherwise transfer manually via `Networking.SetOwner`).
+3. Make sure ownership is sensible. Grabbing a `VRCPickup` takes ownership **[Community-known]**; otherwise transfer manually via `Networking.SetOwner`.
+
+## Inspector properties
+
+All items in this section: **[Docs]**.
+
+| Property | Effect |
+|---|---|
+| **Allow Collision Ownership Transfer** | If checked, ownership transfers when the object collides with an object owned by another player. |
+| **Force Kinematic On Remote** *(SDK 3.8.0+)* | If checked, the Rigidbody is forced kinematic for all **non-owners**. Use it for objects whose physics should run *only* on the owner. |
+
+"Force Kinematic On Remote" was added in SDK 3.8.0 (Apr 3, 2025). **[Docs]** <https://creators.vrchat.com/releases/release-3-8-0/>
 
 ## Methods
 
 | Method | Behaviour |
 |---|---|
-| `void FlagDiscontinuity()` | Mark this frame as a teleport so remote clients do not lerp into the new position — they snap. Call right after any sudden position/rotation change. **[Docs]** |
-| `void SetGravity(bool)` | Toggle gravity on the underlying Rigidbody. Owner-only. **[Docs]** |
-| `bool GetGravity()` | Read the current gravity flag. |
-| `void SetKinematic(bool)` | Toggle Rigidbody.isKinematic. Owner-only. **[Docs]** |
-| `bool GetKinematic()` | Read the current kinematic flag. |
-| `void Respawn()` | Teleport back to the position/rotation the GameObject had at scene load, zeroing velocities. Owner-only. **[Docs]** |
-| `void TeleportTo(Vector3 position, Quaternion rotation)` | Move to a new transform, implicitly calling `FlagDiscontinuity`. **[Community-known]** for the convenience method; verify the exact name in your SDK version. |
+| `void FlagDiscontinuity()` | Mark this frame as a teleport: changes made this frame are applied without smoothing, so remote clients snap instead of lerping. Call it in the same frame as any sudden position/rotation change. **[Docs]** |
+| `void SetGravity(bool value)` | Set the gravity flag. With `VRCObjectSync`, the component controls it, not the Rigidbody. Behaves like a synced variable, so **only the owner** can set it. **[Docs]** |
+| `bool GetGravity()` | Read the current gravity flag. **[Docs]** ("Set/Get Gravity") |
+| `void SetKinematic(bool value)` | Set the kinematic flag; same rules as gravity, owner-only. **[Docs]** |
+| `bool GetKinematic()` | Read the current kinematic flag. **[Docs]** ("Set/Get Kinematic") |
+| `void Respawn()` | Teleport back to the starting position and rotation and zero the velocities. Sets the discontinuity hint, so the move is instant. **[Docs]** Owner-only. **[Community-known]** |
+| `void TeleportTo(Transform targetLocation)` | Move the object to the given `Transform`'s location. Note the parameter is a **`Transform`**, not `(Vector3, Quaternion)`; that overload belongs to `VRCPlayerApi.TeleportTo`. **[Docs]** <https://creators.vrchat.com/worlds/components/vrc_objectsync/> The docs don't say whether it flags a discontinuity or needs ownership. Assume owner-only. **[Unverified]** |
 
 ## Patterns
 
@@ -49,7 +62,11 @@ public void Teleport(Vector3 dest) {
 
 ### Hold then drop with physics
 
-A `VRCPickup` with `Auto Hold` and a `VRCObjectSync` on the same GameObject already does this — picking up takes ownership, dropping leaves you as the owner so the post-drop trajectory comes from your physics sim. No code needed.
+A `VRCPickup` and a `VRCObjectSync` on the same GameObject already do this. Picking up takes ownership, and dropping leaves you as the owner, so the post-drop trajectory comes from your physics sim. No code needed. **[Community-known]** (`Auto Hold` doesn't matter here; it only changes how grabbing works.)
+
+### Owner-only physics
+
+Enable **Force Kinematic On Remote** (SDK 3.8.0+) when non-owners shouldn't simulate the Rigidbody themselves. Remote clients then just follow the owner's synced transform instead of running their own physics that might diverge. **[Docs]**
 
 ### Make a Rigidbody act as a moving platform
 
@@ -59,7 +76,10 @@ Use `SetKinematic(true)` so the Rigidbody isn't affected by physics, then move i
 
 - `VRCObjectSync` and `[UdonSynced]` on the same behaviour are both allowed, but they each cost packet budget. Don't double-sync the same data.
 - Each client runs its own physics simulation against the *owner*'s authoritative state. Brief desync during high-velocity collisions is normal.
-- Calls like `SetGravity` are no-ops from non-owners; always guard on ownership.
+- Calls like `SetGravity` / `SetKinematic` only take effect for the owner; always guard on ownership. **[Docs]**
+- Set gravity/kinematic through `VRCObjectSync`, not directly on the `Rigidbody`. The component owns those flags. **[Docs]**
+- Objects with `VRCObjectSync` can **sleep** when at rest and stop sending data. Debug view 6 shows this. **[Docs]** See [Debugging & network stats](debugging-and-stats.md).
+- `Networking.SimulationTime(gameObject)` shows how far behind real time the object is being simulated. Useful for building your own `VRCObjectSync`-like system. **[Docs]**
 
 ## See also
 

@@ -1,6 +1,6 @@
 # VRCObjectPool
 
-`VRC.SDK3.Components.VRCObjectPool` manages a fixed-size array of pre-placed GameObjects and synchronizes their active/inactive state across the network. It is the SDK's answer to *"how do I spawn things for everyone?"*. **[Docs]**
+`VRC.SDK3.Components.VRCObjectPool` manages a fixed-size array of pre-placed GameObjects and synchronizes their active/inactive state across the network. It is the SDK's answer to *"how do I spawn things for everyone?"*. **[Docs]** <https://creators.vrchat.com/worlds/udon/networking/network-components/#vrc-object-pool>
 
 ## Setup
 
@@ -15,20 +15,22 @@ The pool size is **fixed at scene authoring time** — you cannot grow it at run
 
 | Method | Behaviour |
 |---|---|
-| `GameObject TryToSpawn()` | Activates one pooled GameObject and returns its reference. Returns `null` if the pool is empty. The active state replicates to all clients. **[Docs]** |
-| `void Return(GameObject obj)` | Deactivates `obj` and puts it back into the available pool. **[Docs]** |
+| `GameObject TryToSpawn()` | Activates one pooled GameObject and returns it, or `null` if none are available. The active state replicates to all clients. **[Docs]** |
+| `void Return(GameObject obj)` | Returns `obj` to the pool and disables it automatically. **[Docs]** |
 
-Only the **owner** of the pool can spawn or return; calls from non-owners are no-ops. Use `Networking.SetOwner(Networking.LocalPlayer, poolGameObject)` if you want a local player to be able to spawn.
+Only the **owner** of the pool spawns or returns. **[Docs]** What happens when a non-owner calls these isn't documented; in practice nothing replicates. **[Community-known]** Use `Networking.SetOwner(Networking.LocalPlayer, poolGameObject)` if you want a local player to be able to spawn.
+
+The pool's internal `StartPositions` / `StartRotations` fields are not part of the Udon API. SDK 3.8.2 fixed them wrongly showing as exposed in the class exposure tree. **[Docs]** <https://creators.vrchat.com/releases/release-3-8-2/>
 
 ## Lifecycle event
 
-UdonBehaviours **on the spawned object itself** receive:
+Use Unity's **`OnEnable()`** on UdonBehaviours of the pooled object as the "I've just been spawned" hook. Spawning activates the GameObject on every client. **[Docs]**
 
 ```csharp
-public virtual void OnSpawn()
+void OnEnable() { /* reset state, position, etc. */ }
 ```
 
-`OnSpawn` fires on every client when the pool activates the object. Use this as your "I'm now alive, set me up" hook.
+> **`OnSpawn` is deprecated.** `UdonSharpBehaviour` still declares `public virtual void OnSpawn()` **[Source]**, but the official docs say: *"This event is deprecated - use the typical OnEnabled event if you want to do something when an object is 'Spawned' from the pool."* **[Docs]** <https://creators.vrchat.com/worlds/udon/networking/network-components/#onspawn> The official Udon Example Scene does the same: each pooled box restores its start position in `OnEnable`. **[Docs]**
 
 ## Late joiners
 
@@ -56,48 +58,51 @@ public void Spawn() {
 ### Per-object init on spawn
 
 ```csharp
-// On the pooled prefab's UdonBehaviour:
-public override void OnSpawn() {
+// On the pooled object's UdonBehaviour:
+public VRCObjectPool pool;
+
+void OnEnable() {                       // runs on every client when spawned
     rb.velocity = transform.forward * 10f;
-    SendCustomEventDelayedSeconds(nameof(SelfReturn), 5f);
+    SendCustomEventDelayedSeconds(nameof(_SelfReturn), 5f);
 }
-public void SelfReturn() {
-    // Only the pool owner can actually return; ask via custom network event.
-    SendCustomNetworkEvent(NetworkEventTarget.Owner, nameof(ReturnMeToPool));
-}
-public void ReturnMeToPool() {
-    pool.Return(gameObject);
+public void _SelfReturn() {
+    // The timer runs on every client, but only the pool's owner may return.
+    if (Networking.IsOwner(pool.gameObject)) pool.Return(gameObject);
 }
 ```
 
-### Player-driven spawn (everyone shares one pool)
+(Don't use `NetworkEventTarget.Owner` from the pooled object for this. It targets the owner of the *pooled object*, who isn't necessarily the owner of the *pool*.)
+
+### Player-driven spawn (everyone shares one pool, SDK 3.8.1+)
 
 ```csharp
-public override void Interact() {
-    SendCustomNetworkEvent(NetworkEventTarget.Owner, nameof(SpawnAtMe));
-    // synced field to tell the owner where to spawn
-    _spawnAt = transform.position;
+// On an UdonSharpBehaviour on the SAME GameObject as the VRCObjectPool,
+// so NetworkEventTarget.Owner == the pool's owner.
+public void RequestSpawnAt(Vector3 where) {
+    SendCustomNetworkEvent(NetworkEventTarget.Owner, nameof(SpawnAt), where);
 }
-[UdonSynced] Vector3 _spawnAt;
 
-public void SpawnAtMe() {
-    if (!Networking.IsOwner(pool.gameObject)) return;
+[NetworkCallable(maxEventsPerSecond: 2)]
+public void SpawnAt(Vector3 where) {
+    if (!Networking.IsOwner(pool.gameObject)) return;   // ownership may have moved
     GameObject obj = pool.TryToSpawn();
-    if (obj) obj.transform.position = _spawnAt;
+    if (obj) obj.transform.position = where;
 }
 ```
 
-(A more robust version uses `RequestSerialization` plus `OnDeserialization` to ensure `_spawnAt` arrives before `SpawnAtMe`, but this illustrates the pattern.)
+Before 3.8.1 this needed a synced `_spawnAt` field plus an event, which raced (the event usually arrives before the variable). `[NetworkCallable]` parameters remove the race. **[Docs]** <https://creators.vrchat.com/worlds/udon/networking/events/>
+
+Remote clients only see the new position if the pooled object syncs its transform, for example with `VRCObjectSync` plus `FlagDiscontinuity()`. The pool syncs only the active state. **[Docs]**
 
 ## Gotchas
 
 - The pool itself has an owner (the parent GameObject). Don't conflate it with the ownership of spawned children — each pooled GameObject is its own networked entity with its own ownership.
-- Calling `TryToSpawn` from a non-owner returns `null` silently.
-- The pool does not initialize the GameObject's position. The previous user's transform is retained until you overwrite it.
+- Calling `TryToSpawn` from a non-owner should be treated as unsupported. Guard with `Networking.IsOwner(pool.gameObject)`. **[Community-known]**
+- The pool syncs **only active state**. It doesn't reset or sync position. The previous use's transform stays until you overwrite it (the official example scene resets it in `OnEnable`). **[Docs]**
 
 ## Community alternatives
 
-- **CyanPlayerObjectPool** (CyanLaser) — historically *the* "per-player object" pattern. Master-authoritative pool that assigns one unique GameObject per player on join. **Archived Oct 2024** after VRChat shipped native `VRCPlayerObject`, but extensively used in older worlds; documented design is still worth reading. **[Community]** <https://github.com/CyanLaser/CyanPlayerObjectPool>
+- **CyanPlayerObjectPool** (CyanLaser) — historically *the* "per-player object" pattern. Master-authoritative pool that assigns one unique GameObject per player on join. **Archived** (last push May 2024). Superseded by native Player Objects (SDK 3.7.4, Nov 2024). Widely used in older worlds, and its documented design is still worth reading. **[Community]** <https://github.com/CyanLaser/CyanPlayerObjectPool>
 - **EXUR_UdonObjectPool** (naqtn) — alternative pool with explicit acquire/release semantics. **[Community]** <https://github.com/naqtn/EXUR_UdonObjectPool>
 - **VRC-Object-Spawner** (Pokeyi) — drop-in spawner that wraps `VRCObjectPool` for "spawn-and-forget" ergonomics. **[Community]** <https://github.com/Pokeyi/VRC-Object-Spawner>
 - **LSNPlayerObjectPool** — fork of CyanPlayerObjectPool. **[Community]** <https://github.com/LastationVRChat/LSNPlayerObjectPool>

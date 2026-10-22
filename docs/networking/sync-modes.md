@@ -27,7 +27,7 @@ public class SpinningCube : UdonSharpBehaviour {
 **Trade-offs:**
 - Each behaviour eats a slice of the instance's bandwidth budget. Worlds with hundreds of continuous behaviours degrade quickly.
 - Per-serialization packet cap is **~200 bytes** — even a moderate-length synced string blows it. **[Docs]** <https://creators.vrchat.com/worlds/udon/networking/network-details/>
-- `RequestSerialization()` is a no-op on Continuous behaviours.
+- `RequestSerialization()` isn't needed; updates go out regularly. **[Docs]** Calling it anyway has no useful effect. **[Community-known]**
 - `OnPostSerialization` still fires; you can use it to monitor packet success.
 
 ## Manual
@@ -58,13 +58,18 @@ public class Door : UdonSharpBehaviour {
 - You're transmitting larger payloads (a `string` over a few hundred bytes).
 
 **Trade-offs:**
-- Late joiners get the *most recently broadcast* state when they enter the instance. **[Docs]**
+- Late joiners get the *most recently broadcast* state when they enter the instance. This works in both modes; you do **not** need to call `RequestSerialization()` in `OnPlayerJoined`. **[Docs]** <https://creators.vrchat.com/worlds/udon/networking/variables/>
+- Each manual object is rate-limited as a factor of its data size: you can call `RequestSerialization()` as often as you like, but sends are spaced out. **[Docs]**
 - `Linear`/`Smooth` sync modes still work on numeric fields — but interpolation only kicks in across the gap between `RequestSerialization()` calls, which can be long. Usually you set `UdonSyncMode.None` on manual behaviours.
 - Per-serialization budget **~280 KB** (much larger than continuous). **[Docs]** <https://creators.vrchat.com/worlds/udon/networking/network-details/>
 
 ## Mixed-mode behaviours don't exist
 
-A single behaviour has a single mode. If you have both "every-frame smooth rotation" state and "important discrete state" state to sync, split them across two behaviours on the same GameObject.
+A single behaviour has a single mode. If you have both "every-frame smooth rotation" state and "important discrete state" to sync, split them across two behaviours on **different GameObjects** (see below).
+
+### Multiple behaviours on one GameObject
+
+If one GameObject has several UdonBehaviours with different sync modes, **all of them use the most restrictive one**. A Manual and a Continuous behaviour on the same object both act as **Manual**. **[Docs]** <https://creators.vrchat.com/worlds/udon/networking/network-details/#multiple-udonbehaviours> So put the continuous state on a child GameObject. `BehaviourSyncMode.NoVariableSync` behaviours are designed to sit on either kind of object. **[Docs]**
 
 ## Event timing differences
 
@@ -78,4 +83,5 @@ A single behaviour has a single mode. If you have both "every-frame smooth rotat
 
 - [Attributes → BehaviourSyncMode](../attributes/behaviour-sync-mode.md)
 - [Serialization](serialization.md)
+- [Debugging & network stats](debugging-and-stats.md) — measure actual send interval and size per object.
 - [UdonSharpBehaviour → networking events](../udonsharp-behaviour/networking-events.md)

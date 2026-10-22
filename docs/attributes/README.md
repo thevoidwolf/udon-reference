@@ -1,6 +1,8 @@
 # Attributes
 
-UdonSharp ships four custom attributes plus two supporting enums. Source: `Runtime/UdonSharpAttributes.cs`. **[Source]**
+UdonSharp ships four custom attributes plus two supporting enums. Source: `Runtime/UdonSharpAttributes.cs`. **[Source]** The VRChat Worlds SDK adds `[NetworkCallable]` (SDK 3.8.1+, namespace `VRC.SDK3.UdonNetworkCalling`). **[Docs]**
+
+Official reference: <https://creators.vrchat.com/worlds/udon/udonsharp/attributes/>. It covers `UdonSynced`, `UdonSyncMode`, `UdonBehaviourSyncMode` and `BehaviourSyncMode`, and recommends Varneon's UdonSharp Development Practices for an overview. **[Docs]** (The old `udonsharp.docs.vrchat.com/attributes` URL now returns 404.)
 
 | Page | Symbol |
 |---|---|
@@ -8,6 +10,9 @@ UdonSharp ships four custom attributes plus two supporting enums. Source: `Runti
 | [BehaviourSyncMode](behaviour-sync-mode.md) | `[UdonBehaviourSyncMode(BehaviourSyncMode)]` — class-level sync mode enforcement. |
 | [RecursiveMethod](recursive-method.md) | `[RecursiveMethod]` — allow a method to recurse safely. |
 | [FieldChangeCallback](field-change-callback.md) | `[FieldChangeCallback(string)]` — route writes through a property setter. |
+| [NetworkCallable](network-callable.md) | `[NetworkCallable]` / `[NetworkCallable(maxEventsPerSecond: X)]` — make a method callable over the network, with up to 8 parameters and a rate limit. **(SDK 3.8.1+)** |
+
+`UdonSharpAttributes.cs` also declares `[CompileInit]`, marked `[Obsolete("This attribute currently does nothing")]`. Don't use it. **[Source]**
 
 Standard Unity / .NET attributes generally also work on U# fields and classes:
 
