@@ -11,7 +11,9 @@ Each section pulls from three sources:
 
 > **Status:** Work in progress. Every claim is tagged for provenance — see [Provenance tags](#provenance-tags) below.
 >
-> **Last refreshed:** October 2026, against **VRChat Worlds SDK 3.10.5** (Sep 2026) and **Unity 2022.3.22f1**. Features added after that are not covered yet — check the [release notes](https://creators.vrchat.com/releases/).
+> **Last refreshed:** November 2026, against **VRChat Worlds SDK 3.10.6** (Oct 30, 2026) and **Unity 2022.3.22f1**. Features added after that are not covered yet. Check the [release notes](https://creators.vrchat.com/releases/).
+>
+> **Beta:** Worlds SDK **3.11.0-beta.1** (Nov 2026) moves to **Unity 6** and adds bone attachment, platform checks and Social Hooks. It's summarised separately in [SDK 3.11 beta preview](docs/references/sdk-3-11-beta.md) and is *not* reflected in the topic pages yet.
 
 ---
 
@@ -23,7 +25,7 @@ Each section pulls from three sources:
 | [UdonSharpBehaviour](docs/udonsharp-behaviour/README.md) | Base class, lifecycle events, runtime methods, type identity. |
 | [Attributes](docs/attributes/README.md) | `[UdonSynced]`, `[UdonBehaviourSyncMode]`, `[RecursiveMethod]`, `[FieldChangeCallback]`. |
 | [Networking](docs/networking/README.md) | Sync modes, ownership, custom network events with parameters (`[NetworkCallable]`), `VRCObjectSync`, `VRCObjectPool`, network stats & debugging. |
-| [Players](docs/players/README.md) | `VRCPlayerApi`, tracking data, voice/audio, pickups & stations, player tags, drones, `Networking` static class. |
+| [Players](docs/players/README.md) | `VRCPlayerApi`, tracking data, voice/audio, pickups & stations (Udon property names, haptics, `UseStation`/`ExitStation`), player tags, drones, `Networking` static class (server time, `IsObjectReady`). |
 | [GameObject Lifecycle](docs/gameobject-lifecycle/README.md) | `Instantiate`, `Destroy`, parenting, runtime constraints. |
 | [Graphics](docs/graphics/README.md) | `VRCGraphics`, `VRCShader`, materials, textures, meshes, render textures, `VRCAsyncGPUReadback`, `VRCImageDownloader`, `VRCCameraSettings` / `VRCQualitySettings`, Camera Dolly. |
 | [Data Containers](docs/data-containers/README.md) | `DataToken`, `DataList`, `DataDictionary`, `VRCJson`. |
@@ -35,9 +37,10 @@ Each section pulls from three sources:
 | [AI Navigation](docs/ai-navigation/README.md) | NavMesh integration and constraints. |
 | [Editor API](docs/editor-api/README.md) | `UdonSharpEditorUtility`, `UdonSharpProgramAsset`, `UdonSharpGUI`, build hooks. |
 | [Compiler](docs/compiler/README.md) | Supported and unsupported C# features in U#, workarounds. |
-| [Dynamics](docs/dynamics/README.md) | PhysBones, Contacts, VRC Constraints in worlds (SDK 3.10+): Udon events, properties, `ApplyConfigurationChanges()`. |
+| [Dynamics](docs/dynamics/README.md) | PhysBones, Contacts, VRC Constraints in worlds (SDK 3.10+): Udon events, properties, `ApplyConfigurationChanges()`, constraint source methods and smoothing (3.10.6). |
+| [World Components](docs/world-components/README.md) | `VRCBillboard`, `VRCVelocityTracker`, `VRCPlacementZone` (SDK 3.10.6), `VRCAvatarPedestal`, `VRCPortalMarker`. |
 | [Tweening](docs/tweening/README.md) | `VRCTween` / `VRCTweenHandle` (SDK 3.10.4+): tween types, virtual tweens, `DelayedCall`, easing. |
-| [References](docs/references/README.md) | Source map, official docs, community resources. |
+| [References](docs/references/README.md) | Source map, official docs, community resources, [SDK 3.11 beta preview](docs/references/sdk-3-11-beta.md). |
 
 ---
 
@@ -77,7 +80,7 @@ The proxy ↔ backing duality is the source of most of the editor-tooling API (s
 Because Udon has no published extern allowlist, this reference distinguishes the *strength of evidence* for every non-obvious claim:
 
 - **[Docs]** — Officially documented at <https://creators.vrchat.com/worlds/udon/> or <https://udonsharp.docs.vrchat.com/>.
-- **[Source]** — Confirmed by reading the open-source UdonSharp runtime / editor under `Packages/com.vrchat.worlds/Integrations/UdonSharp/` (the stand-alone `com.vrchat.UdonSharp` package before SDK 3.4.0).
+- **[Source]** — Confirmed by reading the open-source UdonSharp runtime / editor under `Packages/com.vrchat.worlds/Integrations/UdonSharp/` (the stand-alone `com.vrchat.UdonSharp` package before SDK 3.4.0), other source shipped in the SDK packages (e.g. ClientSim), or the Udon extern signatures in the SDK's `Runtime/Udon/External/VRC.Udon.Wrapper.dll`. Extern-table evidence shows a signature *exists* in that SDK version. It doesn't show how the client behaves at runtime.
 - **[Code-confirmed]** — Confirmed by sample or test code shipped in the UdonSharp package.
 - **[Community]** — Sourced from a named community project (GitHub repo, blog post, wiki page) with an explicit URL citation. Higher trust than `[Community-known]`.
 - **[Community-known]** — Widely used in production Udon worlds but not formally documented; not tied to a single citable source.
