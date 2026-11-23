@@ -36,7 +36,17 @@ public string InteractionText { get; set; }
 
 Text shown in the interact tooltip when a player aims at this object. Default `"Use"`. **[Source]**
 
-You can also configure the interaction text and proximity in the inspector via the `UdonBehaviour` component fields ("Interaction Text", "Proximity").
+### Interact inspector options
+
+When a U# class implements `Interact()`, its inspector shows options that control how the interaction is displayed. They work the same way as the matching [VRCPickup](../players/pickups-stations.md#vrcpickup-inspector-fields-and-udon-properties) fields. **[Docs]** <https://creators.vrchat.com/worlds/udon/graph/event-nodes#interact>
+
+| Inspector field | Notes |
+|---|---|
+| Interaction Text | Tooltip text (`InteractionText` above). **[Docs]** |
+| Proximity | Maximum interaction distance. **[Docs]** |
+| Outline Renderers | **SDK 3.10.6+.** Which child renderers get the hover outline. Useful when the object contains "hidden" meshes that shouldn't glow. **[Docs]** The U# inspector writes the list to the backing `UdonBehaviour.OutlineRenderers`. **[Source]** (`Editor/Editors/UdonSharpGUI.cs`) |
+
+From client **2026.4.1**, an interactable or pickup with an **empty** Outline Renderers list no longer auto-outlines `SkinnedMeshRenderer`s. List them explicitly if they should glow. ClientSim in 3.10.6 behaves the same way. **[Docs]** <https://creators.vrchat.com/releases/release-3-10-6> / ClientSim **[Source]**
 
 ---
 
@@ -91,7 +101,7 @@ public void Fire() { /* fires for everyone */ }
 
 For shared pickup *physics*, attach `VRCObjectSync` to the same GameObject — see [Networking → ObjectSync](../networking/object-sync.md).
 
-Related `VRCPickup` changes: adding the component auto-moves the GameObject to the `Pickup` layer again (SDK 3.10.4+), and an **Outline Renderers** property selects which renderers get the hover highlight (SDK 3.10.5+). **[Docs]**
+Related `VRCPickup` changes: adding the component auto-moves the GameObject to the `Pickup` layer again (SDK 3.10.4+). An **Outline Renderers** property selects which renderers get the hover highlight (SDK 3.10.5+; plain interactables got it in 3.10.6). The official pickup page now documents `Drop(VRCPlayerApi)`, `GenerateHapticEvent(...)` and `PlayHaptics()` too. See [Pickups & Stations](../players/pickups-stations.md#vrcpickup-runtime-api). **[Docs]**
 
 ---
 

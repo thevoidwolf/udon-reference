@@ -78,6 +78,8 @@ if (fieldChangeCallback != null) {
 ## Gotchas
 
 - The setter is **expected** to write the field. If you forget, the field will not be updated and the next sync packet will revert to the old value.
+- Inside the setter, `value` is the new value and the field **still holds the previous one**, so you can compare old and new before assigning. **[Docs]** <https://creators.vrchat.com/worlds/udon/udonsharp/attributes/#fieldchangecallback>
+- Reading the field from another behaviour (`other._score`) is allowed, but it reads the field directly and doesn't call the getter. **[Docs]**
 - The property must be on the same class as the field, and its type must **match the field's type exactly**. Otherwise compilation fails with *"Target property '…' for FieldChangeCallback was not found"* or *"Target property type '…' did not match field type"*. **[Source]** (`Editor/Compiler/Binder/Symbols/UdonSharpBehaviourFieldSymbol.cs`)
 - **You can't assign the field from another behaviour** (`other._score = 5;`). That's a compile error: *"Cannot set field on U# behaviour by reference when that field has a FieldChangeCallback attribute."* Assign the property instead (`other.Score = 5;`), or use `SetProgramVariable`. **[Source]** (`BoundFieldAccessExpression.cs`)
 - In the editor-side proxy (`UdonSharpBehaviour.SetProgramVariable`), a property with no setter makes the write silently skipped. **[Source]**

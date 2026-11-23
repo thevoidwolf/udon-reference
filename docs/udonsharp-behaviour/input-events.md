@@ -80,10 +80,10 @@ public override void OnInputMethodChanged(VRCInputMethod inputMethod)
 
 Fires when the local player switches input method (e.g. keyboard → mouse, controller, touchscreen). **[Docs]**
 
-`VRC.SDKBase.VRCInputMethod` values (index in parentheses): `Keyboard` (0), `Mouse` (1), `Controller` (2), `Gaze` (3), `Vive` (5), `Oculus` (6), `ViveXR` (7), `Index` (10), `HPMotionController` (11), `Osc` (12), `QuestHands` (13), `Generic` (14), `Touch` (15), `OpenXRGeneric` (16), `Pico` (17), `SteamVR2` (18), `Embodied` (19). **[Docs]** (<https://creators.vrchat.com/worlds/udon/graph/type-nodes/#vrcsdkbasevrcinputmethod>)
+`VRC.SDKBase.VRCInputMethod` values (index in parentheses): `Keyboard` (0), `Mouse` (1), `Controller` (2), `Gaze` (3), `Vive` (5), `Oculus` (6), `ViveXr` (7), `Index` (10), `HPMotionController` (11), `Osc` (12), `QuestHands` (13), `Generic` (14), `Touch` (15), `OpenXRGeneric` (16), `Pico` (17), `SteamVR2` (18), `Embodied` (19). **[Docs]** (<https://creators.vrchat.com/worlds/udon/graph/type-nodes/#vrcsdkbasevrcinputmethod>)
 
 - Most PC VR controllers report `SteamVR2`. Switching to Quest/Pico hand tracking reports `Embodied` (finger tracking of any kind). **[Docs]**
-- `Vive` = Vive controller through SteamVR; `ViveXR` = Vive XR Elite controller via OpenXR (the prose docs spell it `ViveXr`; the type table spells it `ViveXR` — check in your IDE). **[Docs]**
+- `Vive` = Vive controller through SteamVR; `ViveXr` = Vive XR Elite controller via OpenXR. **[Docs]** The type table spells it `ViveXR`, but the SDK member is `ViveXr`. **[Source]** (SDK 3.10.6 `VRCSDKBase.dll` / extern table) See also [`InputManager`](../input-and-ui/input-events.md#inputmanager) for polling the current input method.
 - Touchscreen input is `Touch`; there is no `Touchscreen` member. **[Docs]**
 
 ```csharp
