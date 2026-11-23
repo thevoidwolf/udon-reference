@@ -45,6 +45,10 @@ Vector3 head = player.GetBonePosition(HumanBodyBones.Head);
 Vector3 leftHand = player.GetBonePosition(HumanBodyBones.LeftHand);
 ```
 
+### Attaching transforms to bones (SDK 3.11.0-beta.1, beta only)
+
+The 3.11.0 beta adds `player.AttachTransformToBone(Transform, HumanBodyBones)` and `player.DetachTransformFromBone(Transform)`. The client moves an attached transform onto the bone every frame, right after PhysBones and Constraints, without reparenting it. That replaces the hand-written bone-follower pattern below. **Not available in 3.10.6.** See the [beta preview](../references/sdk-3-11-beta.md#attaching-transforms-to-bones). **[Docs]** (beta)
+
 ## Patterns
 
 ### Object that follows a hand

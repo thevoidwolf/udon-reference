@@ -15,40 +15,64 @@ VRCPickup p = player.GetPickupInHand(VRC_Pickup.PickupHand hand);
 
 `EnablePickups` toggles the player's ability to pick up and use pickups at all (on by default). `GetPickupInHand` returns the pickup currently held in `hand` (`Left` / `Right` / `None`), or `null` — local-player only. **[Docs]**
 
-### `VRCPickup` inspector fields
+### `VRCPickup` inspector fields and Udon properties
 
-**[Docs]** <https://creators.vrchat.com/worlds/components/vrc_pickup>
+Since Oct 2026 the official page lists the Udon property for each inspector field. The Udon names don't always match the inspector labels, so check the capitalisation. **[Docs]** <https://creators.vrchat.com/worlds/components/vrc_pickup>
 
-| Field | Notes |
-|---|---|
-| Auto Hold | Whether the pickup stays in hand after Grab is released — see [Auto Hold](#auto-hold). |
-| Use Text | Prompt shown while held. Requires Auto Hold. |
-| Interaction Text | Hover label (VR, or when looked at on desktop). Falls back to a default label if empty. |
-| Proximity | Maximum pickup distance in metres (raycast from hand in VR / head on desktop; VR hover sphere is 0.4 m × avatar scale). |
-| Orientation | `Any` (default) / `Gun` / `Grip`. |
-| Exact Gun / Exact Grip | Transforms defining the hold pose for Gun / Grip orientation (use child transforms). |
-| Pickupable | Whether the object can currently be picked up. |
-| Disallow Theft | Blocks pickup while a remote player is holding it. |
-| Allow Manipulation When Equipped | Lets keyboard / controller users rotate the held pickup. |
-| Momentum Transfer Method | How collision force is applied via `AddForceAtPosition` (other object needs `AllowCollisionTransfer`). |
-| Throw Velocity Boost Min Speed / Scale | Release-speed threshold (negative disables) and throw multiplier (1 = none). |
-| Outline Renderers | (SDK 3.10.5+) Which renderers get the hover outline. Only `MeshRenderer` / `SkinnedMeshRenderer`; empty or invalid entries fall back to auto-detection. |
-
-### `VRCPickup` script surface
-
-Commonly used members on the component (accessed via `GetComponent`). The official component page documents only inspector fields, so these are **[Community-known]**:
-
-| Member | Type | Notes |
+| Field | Udon property | Notes |
 |---|---|---|
-| `currentPlayer` | `VRCPlayerApi` | The player currently holding it, or `null`. |
-| `currentHand` | `VRC_Pickup.PickupHand` | `None` / `Left` / `Right`. |
-| `IsHeld` | `bool` | Convenience. |
-| `pickupable` | `bool` | Allow / disallow picking up. |
-| `proximity` | `float` | Pickup range. |
-| `InteractionText` / `UseText` | `string` | The pickup's own hover / use labels (not the UdonBehaviour's interact text). |
-| `Drop()` | `void` | Force the current holder to drop. |
+| Auto Hold | `AutoHold` (`VRC_Pickup.AutoHoldMode`) | Whether the pickup stays in hand after Grab is released. See [Auto Hold](#auto-hold). |
+| Use Text | `UseText` | Prompt shown while held. Requires Auto Hold. |
+| Interaction Text | `InteractionText` | Hover label (VR, or when looked at on desktop). Falls back to a default label if empty. |
+| Proximity | `Proximity` (read) / `proximity` (write) | Maximum pickup distance in metres (raycast from hand in VR / head on desktop; VR hover sphere is 0.4 m × avatar scale). **`Proximity` has no setter.** Read `Proximity`, assign `proximity`. |
+| Orientation | `orientation` (`VRC_Pickup.PickupOrientation`) | `Any` (default) / `Gun` / `Grip`. |
+| Exact Gun / Exact Grip | `ExactGun` / `ExactGrip` | Transforms defining the hold pose for Gun / Grip orientation (use child transforms). |
+| Pickupable | `pickupable` | Whether the object can currently be picked up. |
+| Disallow Theft | `DisallowTheft` | Blocks pickup while a remote player is holding it. |
+| Allow Manipulation When Equipped | `allowManipulationWhenEquipped` | Lets keyboard / controller users rotate the held pickup. |
+| Momentum Transfer Method | `MomentumTransferMethod` (`ForceMode`) | How collision force is applied via `AddForceAtPosition` (other object needs `AllowCollisionTransfer`). |
+| Throw Velocity Boost Min Speed / Scale | `ThrowVelocityBoostMinSpeed` / `ThrowVelocityBoostScale` | Release-speed threshold (negative disables) and throw multiplier (1 = none). |
+| Outline Renderers | `OutlineRenderers` | (SDK 3.10.5+) Which renderers get the hover outline. Only `MeshRenderer` / `SkinnedMeshRenderer`; empty or invalid entries fall back to auto-detection. See [Outline behaviour change](#outline-behaviour-change-sdk-3106--client-202641). |
 
-(An earlier revision listed a `ForceDrop()` method; it could not be verified and has been removed.)
+All names and types in this table are **[Docs]**. The `Proximity` getter and the `proximity` field setter are both present in the Udon extern table (`__get_Proximity__SystemSingle`, `__set_proximity__SystemSingle`). **[Source]** (`Runtime/Udon/External/VRC.Udon.Wrapper.dll`)
+
+### `VRCPickup` runtime API
+
+State and methods with no inspector equivalent. **[Docs]** <https://creators.vrchat.com/worlds/components/vrc_pickup#udon-api>
+
+| Member | Type / returns | Notes |
+|---|---|---|
+| `currentPlayer` | `VRCPlayerApi` | The holder, or `null`. Read-only. |
+| `IsHeld` | `bool` | Read-only. |
+| `currentHand` | `VRC_Pickup.PickupHand` | `None` / `Left` / `Right`. Read-only. |
+| `Drop()` | `void` | Forces the current holder to drop it. No-op if nobody holds it. |
+| `Drop(VRCPlayerApi instigator)` | `void` | Forces that player to drop it. |
+| `GenerateHapticEvent(float duration, float amplitude, float frequency)` | `void` | Haptic pulse on the holding controller. Does nothing in non-VR. In U# all three parameters are optional (`0.25`, `0.5`, `0.5`). In the Udon Graph all three inputs are required. |
+| `PlayHaptics()` | `void` | Haptic pulse with the default values. Same as `GenerateHapticEvent()` with no arguments. |
+
+(An earlier revision of this page listed a `ForceDrop()` method. There's no such extern in the 3.10.6 extern table. **[Source]** Use `Drop()`.)
+
+```csharp
+using UdonSharp;
+using VRC.SDK3.Components;
+
+public class BuzzyPickup : UdonSharpBehaviour
+{
+    private VRCPickup _pickup;
+
+    void Start() { _pickup = GetComponent<VRCPickup>(); }
+
+    public override void OnPickup() { _pickup.PlayHaptics(); }
+}
+```
+
+Adapted from the official example. **[Docs]**
+
+### Outline behaviour change (SDK 3.10.6 / client 2026.4.1)
+
+- Starting with client **2026.4.1**, pickups and interactables whose **Outline Renderers** list is empty **no longer auto-outline `SkinnedMeshRenderer`s**. Existing content relied on that not happening. If a skinned mesh should glow on hover, add it to the list explicitly. **[Docs]** <https://creators.vrchat.com/releases/release-3-10-6>
+- ClientSim 3.10.6 matches: auto-detection skips skinned meshes unless they're listed. **[Source]** (`Integrations/ClientSim/Runtime/System/ClientSimHighlightManager.cs`)
+- Plain interactables (an UdonBehaviour with `Interact()`) gained the same **Outline Renderers** list in 3.10.6. See [Interaction events](../udonsharp-behaviour/interaction-events.md#interact-inspector-options). **[Docs]**
 
 UdonBehaviours on the same GameObject as a `VRCPickup` receive these events (see [Interaction events](../udonsharp-behaviour/interaction-events.md)):
 
@@ -87,7 +111,9 @@ GameObject "Sword"
 
 A `VRC.SDK3.Components.VRCStation` is the "sit here" component. The GameObject needs a collider (usually **Is Trigger**) so players can interact with it. The player is moved to the station's enter location and can stand up by moving / jumping unless exit is disabled. **[Docs]** <https://creators.vrchat.com/worlds/components/vrc_station>
 
-### Programmatic entry
+If the station's own GameObject has **no collider**, VRChat adds a trigger `BoxCollider` when the station loads, and ClientSim does the same. A collider on a **child** object doesn't count, so you still get the extra box. To control the interaction area, put your own collider on the same GameObject as the station. **[Docs]**
+
+### Programmatic entry and exit
 
 ```csharp
 public override void Interact() {
@@ -95,7 +121,16 @@ public override void Interact() {
 }
 ```
 
-`UseAttachedStation` works when called from an UdonBehaviour on the **same GameObject** as the station. The player enters that station.
+`UseAttachedStation` works when called from an UdonBehaviour on the **same GameObject** as the station. The player enters that station. **[Docs]**
+
+The station component itself has two methods. **[Docs]** <https://creators.vrchat.com/worlds/components/vrc_station#udon-api>
+
+| Method | Effect |
+|---|---|
+| `UseStation(VRCPlayerApi player)` | Seats the player in this station. |
+| `ExitStation(VRCPlayerApi player)` | Removes the player from this station. Use it when `disableStationExit` is set. |
+
+Both appear in the Udon extern table (`__UseStation__VRCSDKBaseVRCPlayerApi__SystemVoid`, `__ExitStation__VRCSDKBaseVRCPlayerApi__SystemVoid`). **[Source]** Whether `UseStation` can seat a *remote* player is not documented. Seat-related calls are normally made by the local player. **[Unverified]**
 
 ### Events
 
@@ -108,25 +143,24 @@ public override void OnStationExited(VRCPlayerApi player) { }
 
 Both fire on every client (for local and remote players). Use the parameter to act on the right player. **[Docs]**
 
-To force a player out — e.g. when `disableStationExit` is set — use the station's `ExitStation` node (`station.ExitStation(player)` in U#). **[Docs]** for the node; U# form **[Community-known]**
+### Configuration
 
-### Common configuration
+| Inspector field | Udon property | Use |
+|---|---|---|
+| Player Mobility | `PlayerMobility` | `Mobile` (can move while seated), `Immobilize` (locked at the enter location), `ImmobilizeForVehicle` (like Immobilize, for moving stations). |
+| Can Use Station From Station | `canUseStationFromStation` | Allow switching station-to-station while seated. |
+| Disable Station Exit | `disableStationExit` | Player cannot leave by moving / jumping. Provide another way out (trigger or `ExitStation`). |
+| Seated | `seated` (**read-only**) | Whether the player sits or stands. |
+| Station Enter Player Location | `stationEnterPlayerLocation` | Transform the player is moved to. |
+| Station Exit Player Location | `stationExitPlayerLocation` | Transform where the player ends up after exit. |
+| Animation Controller | `animatorController` | Optional controller replacing the default sitting animations. |
+| Controls Object | — (no Udon property) | For stations that control an object, such as a vehicle. |
 
-| Inspector field | Use |
-|---|---|
-| `PlayerMobility` | `Mobile` (can move while seated), `Immobilize` (locked at the enter location), `ImmobilizeForVehicle` (like Immobilize, tuned for moving stations). |
-| `canUseStationFromStation` | Allow switching station-to-station while seated. |
-| `disableStationExit` | Player cannot leave by moving / jumping. Provide another way out (trigger or `ExitStation`). |
-| `seated` | Whether the player sits or stands. |
-| `stationEnterPlayerLocation` | Transform the player is moved to. |
-| `stationExitPlayerLocation` | Transform where the player ends up after exit. |
-| `animatorController` | Optional controller replacing the default sitting animations. |
-| `controlsObject` | For stations that control an object, such as a vehicle. |
-
-Field meanings **[Docs]**; C# field casing **[Community-known]**.
+Field meanings and Udon property names: **[Docs]** (property column published Oct 2026).
 
 ## See also
 
 - [VRCPlayerApi](vrc-player-api.md)
 - [Interaction events](../udonsharp-behaviour/interaction-events.md)
 - [Networking → ObjectSync](../networking/object-sync.md)
+- [World Components](../world-components/README.md): avatar pedestals, portals, billboards, velocity trackers, placement zones.

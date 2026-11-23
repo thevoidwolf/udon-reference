@@ -18,6 +18,7 @@ Source: official docs at <https://creators.vrchat.com/worlds/udon/players/> plus
 | `isVRCPlus` | `bool` | Has an active VRC+ subscription. (SDK 3.10.3+) **[Docs]** |
 | `isSuspended` | `bool` | Device suspended (sleep/background). Always `false` for the local player. Pair with the `OnPlayerSuspendChanged(VRCPlayerApi)` event. (SDK 3.7.0+) **[Docs]** |
 | `IsUserInVR()` | `bool` | VR headset active. **[Docs]** |
+| `IsUserOnPC()` / `IsUserOnAndroid()` / `IsUserOnIOS()` / `IsUserOnMobile()` | `bool` | **SDK 3.11.0-beta.1 only. Not in 3.10.6.** Platform checks. See the [beta preview](../references/sdk-3-11-beta.md#platform-detection). **[Docs]** (beta) |
 | `GetDrone()` | `VRCDroneApi` | The player's VRChat+ Drone handle. (SDK 3.8.0+) See [Drones](drones.md). **[Docs]** |
 
 ## Validity
@@ -138,6 +139,27 @@ for (int i = 0; i < n; i++) {
 ```
 
 Both `GetPlayerCount` and `GetPlayers` are static. Allocate the array up front and reuse; if the array is smaller than the player count, the excess players are silently skipped. **[Docs]**
+
+## Shuffling (`Utilities.ShuffleArray`)
+
+`VRC.SDKBase.Utilities.ShuffleArray(int[] array)` randomly reorders an `int` array **in place**. It doesn't return a new array, so copy first if you need the original order. **[Docs]** <https://creators.vrchat.com/worlds/udon/players/#shufflearray> The extern has been in the SDK for a while. The players page first documented it in Oct 2026. **[Source]** (extern table, SDK 3.10.5)
+
+In U#, **only `int[]` is accepted**. Any other array type fails with "Method is not exposed to Udon". To shuffle something else, shuffle an index array and read through it. **[Docs]**
+
+```csharp
+VRCPlayerApi[] players = VRCPlayerApi.GetPlayers();
+int[] order = new int[players.Length];
+for (int i = 0; i < order.Length; i++) order[i] = i;
+Utilities.ShuffleArray(order);
+
+for (int i = 0; i < order.Length; i++)
+{
+    VRCPlayerApi p = players[order[i]];
+    string team = i % 2 == 0 ? "Red" : "Blue";   // two random teams
+}
+```
+
+Adapted from the official example. **[Docs]** The shuffle is local, so each client gets a different order. To agree on teams, shuffle on one client (e.g. the owner) and sync the result. **[Community-known]**
 
 ## Patterns
 

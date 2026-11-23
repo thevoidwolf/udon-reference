@@ -7,12 +7,12 @@
 | Page | Topic |
 |---|---|
 | [VRCPlayerApi](vrc-player-api.md) | Properties, position, locomotion, audio, voice, haptics, language. |
-| [Tracking Data](tracking-data.md) | `GetTrackingData`, head/hands position & rotation, bones. |
+| [Tracking Data](tracking-data.md) | `GetTrackingData`, head/hands position & rotation, bones. (`AttachTransformToBone` is 3.11 beta only.) |
 | [Voice & Audio](voice-audio.md) | Per-player voice and avatar audio configuration. |
-| [Pickups & Stations](pickups-stations.md) | `EnablePickups`, `GetPickupInHand`, station entry. |
+| [Pickups & Stations](pickups-stations.md) | `EnablePickups`, `GetPickupInHand`, `VRCPickup` Udon property names / `Drop` / haptics, Outline Renderers, `VRCStation` `UseStation` / `ExitStation`. |
 | [Player Tags](player-tags.md) | `SetPlayerTag` / `GetPlayerTag` / `ClearPlayerTags` (and the broken `GetPlayersWithTag`). |
 | [Drones](drones.md) | `VRCDroneApi`, `GetDrone`, drone trigger events (SDK 3.8.0+). |
-| [Networking class](networking-class.md) | `Networking.LocalPlayer`, `IsMaster`, `Master` / `InstanceOwner`, ownership, server time. |
+| [Networking class](networking-class.md) | `Networking.LocalPlayer`, `IsMaster`, `Master` / `InstanceOwner`, ownership, server time (wrap-safe deltas), `IsObjectReady`, `GetUniqueName`. |
 
 ## Quick facts
 
