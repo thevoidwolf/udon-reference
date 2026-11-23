@@ -6,7 +6,7 @@ Player input (controller / keyboard / VR), Unity UI hookups, and the animation-e
 
 | Page | Topic |
 |---|---|
-| [Input Events](input-events.md) | Raw player input on `UdonSharpBehaviour`. |
+| [Input Events](input-events.md) | Raw player input on `UdonSharpBehaviour`, `OnInputMethodChanged`, `InputManager` (current input method, object highlight). |
 | [UI Events](ui-events.md) | Wiring Unity UI components (Button onClick, etc.) to U# methods. |
 | [Animation Events](animation-events.md) | Methods callable from Unity's Animation Window. |
 | [UI Whitelist](ui-whitelist.md) | The complete list of methods/properties exposed to UI events (animation events have their own shorter list on the Animation Events page). |

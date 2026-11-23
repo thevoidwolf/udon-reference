@@ -55,12 +55,43 @@ Fires when the local player switches input methods (e.g. Keyboard → Mouse, Con
 | 3 | `Gaze` | | 15 | `Touch` |
 | 5 | `Vive` | | 16 | `OpenXRGeneric` |
 | 6 | `Oculus` | | 17 | `Pico` |
-| 7 | `ViveXR` | | 18 | `SteamVR2` |
+| 7 | `ViveXr` | | 18 | `SteamVR2` |
 | 10 | `Index` | | 19 | `Embodied` |
 | 11 | `HPMotionController` | | | |
 
 - Most PC VR controllers report as `SteamVR2`. Switching to Quest/Pico hand tracking (or other finger tracking) reports `Embodied`. **[Docs]**
-- `Vive` = Vive controller via SteamVR; `ViveXR` = Vive XR Elite controller via OpenXR. The docs spell it `ViveXR` in the enum table and `ViveXr` in prose — check casing against your SDK's autocomplete. **[Unverified]**
+- `Vive` = Vive controller via SteamVR; `ViveXr` = Vive XR Elite controller via OpenXR. The docs spell it `ViveXR` in the enum table and `ViveXr` in prose. The SDK uses **`ViveXr`**: the extern table has `__get_ViveXr__VRCSDKBaseVRCInputMethod` and `VRCSDKBase.dll` defines `ViveXr`. **[Source]** (SDK 3.10.6)
+
+## `InputManager`
+
+`VRC.SDKBase.InputManager` is a static class for checking how the local player is interacting right now. The methods aren't new (they're in the 3.10.5 extern table and earlier), but the official input page only documented them in Oct 2026. **[Docs]** <https://creators.vrchat.com/worlds/udon/input-events/#inputmanager> / **[Source]** (extern table)
+
+| Method | Returns | Notes |
+|---|---|---|
+| `InputManager.IsUsingHandController()` | `bool` | Whether the local player is using VR hand controllers. |
+| `InputManager.GetLastUsedInputMethod()` | `VRCInputMethod` | The method the player *last used*, not the hardware they have. A VR player who touches the keyboard reports `Keyboard` until they use their controllers again. |
+| `InputManager.EnableObjectHighlight(GameObject obj, bool enable)` | `void` | Turns the interaction highlight on/off for the `Renderer` on that GameObject only (not its children). |
+| `InputManager.EnableObjectHighlight(Renderer renderer, bool enable)` | `void` | Same, for a specific `Renderer`. |
+
+To react to input changes, handle [`OnInputMethodChanged`](#oninputmethodchanged) instead of polling `GetLastUsedInputMethod`. **[Docs]**
+
+```csharp
+using UdonSharp;
+using UnityEngine;
+using VRC.SDKBase;
+
+public class HighlightWhenVR : UdonSharpBehaviour
+{
+    public Renderer targetRenderer;
+
+    void Start()
+    {
+        InputManager.EnableObjectHighlight(targetRenderer, InputManager.IsUsingHandController());
+    }
+}
+```
+
+From the official page. **[Docs]**
 
 ## Unity `Input` API
 

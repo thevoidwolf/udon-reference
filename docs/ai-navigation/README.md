@@ -27,6 +27,8 @@ VRChat doesn't list the full method allowlist. `BuildNavMesh` is shown working i
 
 For the full method surface, consult Unity's official AI Navigation package documentation; VRChat docs point readers there.
 
+> **Unity 6 (SDK 3.11 beta).** The Unity 6 beta SDK pulls in `com.unity.ai.navigation` **1.1.5**. Its extern table drops the legacy `OffMeshLink` members and adds `NavMeshLinkInstance` helpers. In Unity 6, `NavMeshObstacle` components on `NavMeshAgent` GameObjects behave differently, and VRChat's upgrade guide says to remove them. Use `NavMeshLink` rather than `OffMeshLink` now if you plan to migrate. See [SDK 3.11 beta preview](../references/sdk-3-11-beta.md#changes-that-affect-udon--u-code). **[Docs]** (beta) / **[Source]**
+
 ## Skeleton
 
 ```csharp

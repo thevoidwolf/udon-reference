@@ -54,7 +54,27 @@ Place the listener UdonSharpBehaviour on the same GameObject as the video player
 
 ## VideoError
 
-The `VRC.SDK3.Components.Video.VideoError` enum carries the failure reason. Values include `Unknown`, `InvalidURL`, `AccessDenied`, `PlayerError`, `RateLimited`. Exact list may vary; check the SDK source. **[Unverified]**
+The `VRC.SDK3.Components.Video.VideoError` enum carries the failure reason. **[Docs]** <https://creators.vrchat.com/worlds/udon/video-players/#handling-errors>
+
+| Value | Meaning |
+|---|---|
+| `Unknown` | Failed for a reason VRChat couldn't identify. |
+| `InvalidURL` | Malformed URL, or it doesn't point to a playable video. |
+| `AccessDenied` | The URL isn't on the allowlist and the player hasn't enabled "Allow Untrusted URLs". |
+| `PlayerError` | The video player component itself failed to play it. |
+| `RateLimited` | Hit the URL rate limit. Wait before trying again rather than retrying immediately. |
+
+These match the SDK 3.10.6 extern table. **[Source]**
+
+```csharp
+public override void OnVideoError(VideoError videoError)
+{
+    if (videoError == VideoError.RateLimited)
+    {
+        // Back off and retry later rather than immediately requesting again.
+    }
+}
+```
 
 ## Community-built players
 
@@ -85,7 +105,7 @@ Across the ecosystem, recurring designs:
 
 ## Known issues (community-tracked)
 
-- **`Networking.GetServerTimeInMilliseconds()` returns negative values for some players.** The sign persists per-session. Any time-anchored sync algorithm must use sign-aware deltas. **[Community]** <https://phi16.hatenablog.com/entry/2025/01/08/023655>
+- **`Networking.GetServerTimeInMilliseconds()` returns negative values for some players.** The sign persists per-session. Any time-anchored sync algorithm must use sign-aware deltas. **[Community]** <https://phi16.hatenablog.com/entry/2025/01/08/023655> Since Oct 2026 the official docs agree that server time wraps and can be negative, and point to `Networking.CalculateServerDeltaTime(now, earlier)` for deltas. **[Docs]** See [Networking (static) → Server time](../players/networking-class.md#server-time).
 - **5-second URL cooldown is per-user, not per-player.** Multiple players joining during a URL change can hit the rate limit simultaneously; queue and stagger.
 - **`VRCUrl` instances can only be constructed at world build-time or via player text input.** There is no runtime URL string construction. ProTV's FAQ documents this. **[Community]** <https://protv.dev/faq>
 

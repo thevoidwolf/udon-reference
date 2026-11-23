@@ -144,6 +144,7 @@ The owner is the player whose Player Object this is. Other players can *read* th
 - Adding `VRCEnablePersistence` *without* `VRCPlayerObject` does nothing — both must be present.
 - Like PlayerData, **persistence cannot be saved from the local player's `OnPlayerLeft`** — schedule earlier. **[Docs]**
 - **VRChat Dynamics** — PhysBones, Contacts and VRC Constraints behave properly on a `VRCPlayerObject` since SDK 3.10.0 (they were unreliable before). **[Docs]** <https://creators.vrchat.com/releases/release-3-10-0>
+- **Null `VRCUrl` fields.** Syncing a `[UdonSynced] VRCUrl` that is `null` threw Udon exceptions in worlds using persistence until SDK **3.10.6**. On older SDKs, initialise synced `VRCUrl` fields to `VRCUrl.Empty` rather than leaving them `null`. **[Docs]** <https://creators.vrchat.com/releases/release-3-10-6> (workaround **[Community-known]**)
 
 ## Community history
 
