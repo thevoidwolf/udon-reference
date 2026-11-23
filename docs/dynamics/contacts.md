@@ -25,6 +25,17 @@ Limits: 3 m maximum radius and 6 m maximum width/height/depth, applied after sca
 
 Box Receivers have a **`Use Face Proximity`** option. It measures proximity to the box's **positive-Z face** instead of its centre. In worlds, this is the only Receiver setting you can configure. **[Docs]**
 
+Proximity is measured from the nearest point on the **Sender's surface** to the Receiver's centre (or to its +Z face with `Use Face Proximity`). **[Docs]** SDK 3.10.6 improved proximity for zero-volume Receivers, very thin box Receivers and very small sphere Senders. **[Docs]** <https://creators.vrchat.com/releases/release-3-10-6>
+
+### Advanced Parameters and Material Contacts (SDK 3.10.6)
+
+3.10.6 added two Receiver features. Both are written for avatars: **Advanced Parameters** writes extra animator parameters about the nearest Sender (`{parameter}_SenderType`, local position, lossy scale, velocity, `_PointSeparation`, `_ProximitySpeed`, `_CollisionTag_{tag}`). **Material Contacts** ("Write to Shaders") writes the transforms of the eight nearest Senders into the material property blocks of up to four renderers, for shaders that include `Packages/com.vrchat.base/ShaderLibrary/VRCContacts.cginc`. **[Docs]** <https://creators.vrchat.com/common-components/contacts/#advanced-parameters>
+
+For worlds:
+
+- World Receivers don't write animator parameters. They raise Udon events instead, so Advanced Parameters has nothing to drive. Use `ContactEnterInfo` / `ContactExitInfo` in your event handlers. **[Docs]**
+- Material Contacts already work in world projects. The 3.11.0-beta.1 notes say world Receivers "already supported" writing to materials and only the inspector hid the options. 3.11.0 shows them. **[Docs]** (beta release notes, <https://vrc-beta-docs.netlify.app/releases/release-3-11-0>) How to set them up in a 3.10.6 world project, with the options hidden, is not documented. **[Unverified]**
+
 ### Filtering
 
 - **`Content Types`** (world contacts only) sets whether the contact interacts with **world**, **avatar** and/or **item** contacts. **[Docs]**
@@ -93,7 +104,14 @@ The docs don't list the other `DynamicsUsage` values. Items are a documented con
 
 ### Updating content types and tags
 
-> **Discrepancy:** The 3.10.0 release notes say: "Changed `VRCContactReceiver.UpdateContentTypes()` to take an array of strings instead of an `IEnumerable` of strings." They add that U# code passing anything other than a `string[]` must be updated. However, the **current** Contacts page lists `UpdateContentTypes(DynamicsUsageFlags newContentTypes)`, and the `string[]` signature belongs to **`UpdateCollisionTags`**. The docs don't reconcile the two. It may have been a later change, or the release note may have named the wrong method. To be safe, pass a real `string[]` to the tag method (not a `DataList` or other enumerable), and check the content-types overload in the Udon Class Exposure Tree for your SDK version. **[Docs]** (both statements) / resolution **[Unverified]**
+The two methods take different argument types:
+
+- `UpdateContentTypes(DynamicsUsageFlags newContentTypes)`
+- `UpdateCollisionTags(string[] newCollisionTags)`
+
+The SDK's Udon extern table confirms both: `__UpdateContentTypes__VRCDynamicsDynamicsUsageFlags__SystemVoid` and `__UpdateCollisionTags__SystemStringArray__SystemVoid` (checked in Worlds SDK 3.10.5 and 3.10.6). **[Source]** (`Runtime/Udon/External/VRC.Udon.Wrapper.dll`)
+
+The 3.10.0 release notes said `UpdateContentTypes()` was changed to "take an array of strings instead of an `IEnumerable` of strings". In current SDKs that signature belongs to **`UpdateCollisionTags`**, so the note most likely named the wrong method. **[Docs]** (release note) / current signatures **[Source]** So pass a real `string[]` to `UpdateCollisionTags`, not a `DataList` or another enumerable. **[Docs]**
 
 ## Example: a hand-pressed button
 
