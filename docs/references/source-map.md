@@ -2,7 +2,7 @@
 
 Where to read the UdonSharp runtime and editor source.
 
-## Where the code lives (as of SDK 3.10.5, Oct 2026)
+## Where the code lives (as of SDK 3.10.6, Nov 2026)
 
 Since **Worlds SDK 3.4.0** (Oct 4, 2023) UdonSharp — and ClientSim — ship *inside* the Worlds SDK package `com.vrchat.worlds`; the separate `com.vrchat.udonsharp` VPM package is legacy (the Worlds package lists it under `legacyPackages`, so the VCC removes it on upgrade). **[Docs]** <https://creators.vrchat.com/releases/release-3-4-0> · <https://creators.vrchat.com/worlds/udon/udonsharp/>
 
@@ -14,7 +14,9 @@ Since **Worlds SDK 3.4.0** (Oct 4, 2023) UdonSharp — and ClientSim — ship *i
 
 ClientSim likewise lives at `Packages/com.vrchat.worlds/Integrations/ClientSim/`; its repo is <https://github.com/vrchat-community/ClientSim>.
 
-All paths below are relative to `Packages/com.vrchat.worlds/Integrations/UdonSharp/`. Every listed file was confirmed present in both the 3.10.5 Worlds package and the GitHub repo on 2026-10-22. Where the two differ, prefer the SDK copy — it contains post-1.1.9 fixes (e.g. 3.10.2's log-parse tool, 3.10.4's `IUdonEventReceiver` on `UdonSharpBehaviour`) that the GitHub repo does not.
+**Getting a specific SDK version's source without a Unity project:** the VPM listing at <https://packages.vrchat.com/official?download> gives each `com.vrchat.worlds` version's zip URL (on <https://github.com/vrchat/packages/releases>) and its `zipSHA256`. Unzip and look under `Integrations/UdonSharp/`. Diffing two versions' zips is the quickest way to see what changed in U#. The same zips hold the Udon extern table (`Runtime/Udon/External/VRC.Udon.Wrapper.dll`). Its signature strings (`strings -n 3`) show which externs a version exposes, which is how this reference cites **[Source]** for Udon-exposure claims.
+
+All paths below are relative to `Packages/com.vrchat.worlds/Integrations/UdonSharp/`. Every listed file was confirmed present in both the 3.10.5 Worlds package and the GitHub repo on 2026-10-22, and re-confirmed in the **3.10.6** and **3.11.0-beta.1** packages on 2026-11-23. Where the two differ, prefer the SDK copy. It contains post-1.1.9 fixes that the GitHub repo does not, e.g. 3.10.2's log-parse tool, 3.10.4's `IUdonEventReceiver` on `UdonSharpBehaviour`, and 3.10.6's enum-comparison and named-argument fixes in `Editor/Compiler/Binder/`.
 
 ## Runtime — `Runtime/`
 
@@ -71,6 +73,13 @@ The U# compiler itself. Most consumers never need to read this.
 | `UdonSharpUndo.cs` | Undo-tracked `AddComponent` / `DestroyImmediate`. |
 | `UdonSharpComponentExtensions.cs` | `AddUdonSharpComponent<T>()` extension. |
 | `LogFileParseUtility.cs` | *SDK-only (not in the GitHub repo).* Backs the "Parse Logs from File" tool (VRChat SDK → Udon Sharp menu) added in SDK 3.10.2. |
+| `UdonSharpGUI.cs` (3.10.6 change) | Draws **Outline Renderers** for U# classes that implement `Interact()`, next to Interaction Text / Proximity. Writes to the backing `UdonBehaviour.OutlineRenderers`. |
+
+### `Editor/UpgradeWizard/` (SDK 3.11.0-beta.1+, Unity 6)
+
+| File | Contains |
+|---|---|
+| `ForceUpgradeStep.cs` | *Beta only.* A Unity 6 Upgrade Wizard step that finds U# scripts and Udon Graphs calling `Rigidbody.AddForce`-family methods, which changed behaviour in Unity 6, so you can fix them by hand. |
 
 ### `Editor/Serialization/`
 

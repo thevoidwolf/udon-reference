@@ -12,7 +12,7 @@ This section is for readers who have not written an UdonSharp world before. If y
 
 ## TL;DR for impatient readers
 
-1. Install Unity **2022.3.22f1** — the exact version VRChat uses as of SDK 3.10.5. Other Unity versions (including newer 2022.3 patches that Unity Hub may recommend) are not supported. **[Docs]** <https://creators.vrchat.com/sdk/upgrade/current-unity-version/>
+1. Install Unity **2022.3.22f1**, the exact version VRChat uses as of SDK 3.10.6. Other Unity versions (including newer 2022.3 patches that Unity Hub may recommend) are not supported. **[Docs]** <https://creators.vrchat.com/sdk/upgrade/current-unity-version/> A Unity 6 SDK (3.11.0) is in **beta** as of Nov 2026. Don't migrate production projects yet. See [Installation](installation.md#requirements).
 2. Install the **VRChat Creator Companion** (VCC) from <https://vrchat.com/home/download>. It installs the correct Unity version for you. (Windows only; the community-made [ALCOM](installation.md#alternative-alcom-community) also runs on macOS/Linux.)
 3. Create a new **World** project. UdonSharp has been **bundled inside the Worlds SDK** (`com.vrchat.worlds`) since SDK 3.4.0, so every World project already has it — there is no separate UdonSharp package to add. **[Docs]** <https://creators.vrchat.com/releases/release-3-4-0/>
 4. In the Project window, right-click → `Create` → `U# Script`, then pick a file name in the save dialog. This creates both a `.cs` file and a paired Udon Program Asset (`.asset`). **[Source]**
