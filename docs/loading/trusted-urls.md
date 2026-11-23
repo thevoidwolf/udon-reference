@@ -11,6 +11,29 @@ All URLs must be wrapped in a `VRCUrl`. `new VRCUrl(string)` can only be called 
 
 `VRCUrl` API: `VRCUrl.Empty`, `url.Get()`, `VRCUrl.IsNullOrEmpty(VRCUrl)`. **[Docs]**
 
+### `VRCUrlInputField`
+
+`VRC.SDK3.Components.VRCUrlInputField` is the UI input field players type URLs into. Udon only ever gets a `VRCUrl` from it, never the raw string. **[Docs]** <https://creators.vrchat.com/worlds/udon/external-urls/#vrcurlinputfield>
+
+| Method | Notes |
+|---|---|
+| `VRCUrl GetUrl()` | The URL the player entered. Returns an empty `VRCUrl` if the field is part of a prefab rather than a scene. |
+| `void SetUrl(VRCUrl url)` | Shows a URL in the field, replacing what the player typed. Does nothing on a prefab (non-scene) field. |
+
+Because Udon can't build a `VRCUrl` at runtime, `SetUrl` can only show a URL the world shipped with or one a player entered earlier. Use it to pre-fill the field or restore a player's last entry. **[Docs]** Both methods are long-standing (present in the 3.10.5 extern table) and were first documented in Oct 2026. **[Source]**
+
+```csharp
+public VRCUrlInputField inputField;
+public BaseVRCVideoPlayer videoPlayer;   // VRC.SDK3.Video.Components.Base
+
+public override void Interact()
+{
+    videoPlayer.PlayURL(inputField.GetUrl());
+}
+```
+
+Adapted from the official example. **[Docs]**
+
 ## Per-subsystem allowlists
 
 Each loader has its own host list. Lists below are copied from the current official pages (checked Oct 2026); VRChat notes they "may change at any time without notice." **[Docs]**

@@ -1,6 +1,6 @@
 # Runtime Constraints
 
-Things Udon does **not** let you do at runtime, in one place, reviewed for SDK 3.10.5 (Sep 2026). These follow from the Udon VM allowlist; VRChat does widen the allowlist over time (see [What changed recently](#what-changed-recently)), so confirm edge cases in **VRChat SDK → Udon Sharp → Class Exposure Tree** (red = not exposed, green = exposed). **[Docs]**
+Things Udon does **not** let you do at runtime, in one place, reviewed for SDK 3.10.6 (Oct 2026). These follow from the Udon VM allowlist; VRChat does widen the allowlist over time (see [What changed recently](#what-changed-recently)), so confirm edge cases in **VRChat SDK → Udon Sharp → Class Exposure Tree** (red = not exposed, green = exposed). **[Docs]**
 
 ## Cannot create
 
@@ -87,8 +87,9 @@ Things older guides list as impossible that are now supported (all **[Docs]**, r
 | 3.10.0 | PhysBones, Contacts, VRC Constraints in worlds, with Udon APIs and events. |
 | 3.10.2 | `enabled` / `isActiveAndEnabled` on all `Behaviour` derivatives; `EventTiming.FixedUpdate` / `PostLateUpdate` for delayed events. |
 | 3.10.4 | VRCTween (tweens, virtual tweens, cancelable `DelayedCall`, `DelayedSetActive`). `UdonSharpBehaviour` implements `IUdonEventReceiver`. |
+| 3.10.6 | Cheap per-frame work without an Udon `Update` loop: [`VRCBillboard`](../world-components/billboard.md) (face the viewer) and [`VRCVelocityTracker`](../world-components/velocity-tracker.md) (read velocity). Constraint source methods replace editing `Sources` directly. |
 
-Still **not** possible as of 3.10.5: `AddComponent`, `new GameObject()`, coroutines, generic collections, reflection, threading, file/raw network I/O.
+Still **not** possible as of 3.10.6: `AddComponent`, `new GameObject()`, coroutines, generic collections, reflection, threading, file/raw network I/O. There is no `__AddComponent__` extern in the 3.10.6 Udon extern table. **[Source]** The 3.11.0 beta doesn't change this list. **[Source]** (3.11.0-beta.1 extern diff)
 
 ## VRChat's position on `AddComponent`
 

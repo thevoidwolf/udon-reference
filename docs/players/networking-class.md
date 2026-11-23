@@ -40,21 +40,38 @@ static bool IsClogged { get; }          // true when too much data is trying to 
 ### Simulation time
 
 ```csharp
-static float SimulationTime(VRCPlayerApi player);   // float [Docs]; docs say it also works for networked objects — that overload (GameObject?) [Unverified]
+static float SimulationTime(VRCPlayerApi player);
+static float SimulationTime(GameObject obj);        // networked objects
 ```
 
-Returns how far back in time a player or networked object is being simulated (used internally by `VRCObjectSync` and players). `Time.realtimeSinceStartup - Networking.SimulationTime(player)` gives that player's current replication delay in seconds. **[Docs]** <https://creators.vrchat.com/worlds/udon/networking/network-components>
+Both overloads are listed on the official Networking page and in the extern table. **[Docs]** / **[Source]** Each returns how far back in time a player or networked object is being simulated (used internally by `VRCObjectSync` and players). `Time.realtimeSinceStartup - Networking.SimulationTime(player)` gives that player's current replication delay in seconds. **[Docs]** <https://creators.vrchat.com/worlds/udon/networking/network-components>
 
 ## Server time
 
 ```csharp
-static long GetServerTimeInMilliseconds();
-static double GetServerTimeInSeconds();           // [Community-known]
-static System.DateTime GetNetworkDateTime();      // [Community-known]
-static float CalculateServerDeltaTime(double timeStamp);
+static double GetServerTimeInSeconds();
+static int    GetServerTimeInMilliseconds();     // int, not long
+static double CalculateServerDeltaTime(double timeInSeconds, double previousTimeInSeconds);
+static System.DateTime GetNetworkDateTime();
 ```
 
-Server time is the same across all clients (within network drift). Use this rather than `Time.time` for time-stamped events you want to compare across players.
+Signatures from the official Networking methods table (Oct 2026), and they match the extern table (`__GetServerTimeInMilliseconds__SystemInt32`, `__CalculateServerDeltaTime__SystemDouble_SystemDouble__SystemDouble`). **[Docs]** <https://creators.vrchat.com/worlds/udon/networking/network-components/#networking-methods> / **[Source]**
+
+- Every client sees about the same server time, so use it rather than `Time.time` for timestamps you compare across players. **[Docs]**
+- **Server time wraps around and can be negative in VRChat.** Don't compare or subtract two timestamps directly. Use `CalculateServerDeltaTime(now, earlier)`, which corrects for the wrap. **[Docs]**
+- **ClientSim starts server time near zero and never wraps**, so wrap bugs won't show in the editor. Test them in VRChat. **[Docs]**
+
+(Earlier revisions of this page gave `GetServerTimeInMilliseconds` as returning `long` and `CalculateServerDeltaTime` as taking one argument and returning `float`. Both were wrong.)
+
+## Other `Networking` methods
+
+| Method | Returns | Notes |
+|---|---|---|
+| `IsObjectReady(GameObject obj)` | `bool` | Whether the object has finished network setup and is safe to use. **[Docs]** |
+| `GetUniqueName(GameObject obj)` | `string` | A network-unique name for the object. **[Docs]** |
+| `Destroy(GameObject obj)` | `void` | Destroys a networked object. For runtime spawn/despawn, VRChat points you to `VRCObjectPool`. **[Docs]** |
+
+These were all in the extern table before Oct 2026. They were added to the official methods table then. **[Docs]** / **[Source]**
 
 ## Player object lookups
 
@@ -108,21 +125,31 @@ public void _TryStart() {
 
 ### Time-stamped events
 
+Sync only the start time and have every client work out the elapsed time itself:
+
 ```csharp
-[UdonSynced] long _eventStartMs;
+[UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
+public class SharedCountdown : UdonSharpBehaviour
+{
+    [UdonSynced] private double _startTime;
 
-public void StartEvent() {
-    if (!Networking.IsOwner(gameObject)) return;
-    _eventStartMs = Networking.GetServerTimeInMilliseconds();
-    RequestSerialization();
-}
+    public override void Interact()
+    {
+        Networking.SetOwner(Networking.LocalPlayer, gameObject);
+        _startTime = Networking.GetServerTimeInSeconds();
+        RequestSerialization();
+    }
 
-public override void OnDeserialization() {
-    long now = Networking.GetServerTimeInMilliseconds();
-    double secondsSinceStart = (now - _eventStartMs) / 1000.0;
-    // every client agrees on this value within network drift
+    void Update()
+    {
+        double elapsed = Networking.CalculateServerDeltaTime(
+            Networking.GetServerTimeInSeconds(), _startTime);
+        // Every client computes the same value from the same synced start time.
+    }
 }
 ```
+
+Adapted from the official example. **[Docs]** `CalculateServerDeltaTime` handles wrap-around, which subtracting raw timestamps doesn't.
 
 ## See also
 

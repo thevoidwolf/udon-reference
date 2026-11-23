@@ -14,16 +14,18 @@ GameObject Instantiate(GameObject original, Vector3 position, Quaternion rotatio
 
 Only the single-argument form is a real extern; the others are U# helpers that clone and then call `SetPositionAndRotation` / `SetParent`. Note `(original, parent)` parents with `worldPositionStays: false`, while `(original, position, rotation, parent)` sets the world pose first and then parents with `worldPositionStays: true`. **[Source]**
 
+Older scripts call `VRCInstantiate(...)` directly. It still works but is obsolete, so use `Instantiate`. **[Docs]** <https://creators.vrchat.com/worlds/udon/udonsharp/#instantiating-objects>
+
 Each clone is **local** to the calling client. Other clients see nothing. Instantiated objects "cannot be correctly synchronized … the only workaround is to use object-pooling." **[Docs]** <https://udonsharp.docs.vrchat.com/networking-tips-&-tricks/>
 
 ## Constraints
 
 | Rule | Detail |
 |---|---|
-| **GameObject only** | No generic `Instantiate<T>(T original)`. Clone the GameObject and `GetComponent` on the result. |
-| **Source must be referenced** | There is no `Resources.Load`, so the original must come from a serialized field. Placing a disabled "template" GameObject in the scene is the conventional, always-works approach. Whether a *project-asset prefab* assigned to a field instantiates correctly in-client isn't covered by the official docs — test it in Build & Test before relying on it. **[Unverified]** |
+| **GameObject only** | Udon can only instantiate `GameObject`s. Instantiating anything else, such as a `Material` or `ScriptableObject`, fails to compile. **[Docs]** <https://creators.vrchat.com/worlds/udon/udonsharp/#instantiating-objects> No generic `Instantiate<T>(T original)`, so clone the GameObject and `GetComponent` on the result. |
+| **Source must be referenced** | There is no `Resources.Load`, so the original must come from a serialized field. Placing a disabled "template" GameObject in the scene is the conventional, always-works approach. Whether a *project-asset prefab* assigned to a field instantiates correctly in-client isn't covered by the official docs — test it in Build & Test before relying on it. **[Unverified]** (The Oct 2026 U# page's example instantiates a `public GameObject prefab` field, which suggests prefab assets work, but the page doesn't say so outright.) |
 | **No `AddComponent` afterward** | Whatever components the template has are what the clone has. |
-| **Not networked** | The new GameObject exists only on this client. For networked spawning use [`VRCObjectPool`](../networking/object-pool.md). |
+| **Not networked** | The new GameObject exists only on this client. For networked spawning use [`VRCObjectPool`](../networking/object-pool.md). For one copy per player that lasts while they're in the instance, use [Player Objects](../persistence/player-objects.md). **[Docs]** |
 | **References survive** | If the template's `UdonBehaviour` has serialized references to other in-scene objects, the clone's components keep those references. |
 
 ## Canonical pattern

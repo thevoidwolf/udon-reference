@@ -4,7 +4,26 @@ The methods listed here are `public virtual` on `UdonSharpBehaviour` (source: `R
 
 > **Source caveat:** **[Source]** tags refer to the public UdonSharp repo (standalone 1.1.9). Events added in later SDKs are only present in the copy bundled with the Worlds SDK and are tagged **[Docs]** from the official event list at <https://creators.vrchat.com/worlds/udon/graph/event-nodes/>. U# override signatures for those are written from the documented outputs; parameter *names* may differ from the SDK's, which doesn't matter for overriding.
 
-Methods inherited from `MonoBehaviour` (`Awake`, `Start`, `OnEnable`, `OnDisable`, `Update`, `LateUpdate`, `FixedUpdate`, `OnDestroy`, `OnTriggerEnter/Exit/Stay`, `OnCollisionEnter/Exit/Stay`, etc.) work as in regular Unity. **[Source]**
+Most Unity `MonoBehaviour` messages (`Start`, `OnEnable`, `OnDisable`, `Update`, `LateUpdate`, `FixedUpdate`, `OnDestroy`, `OnTriggerEnter/Exit/Stay`, `OnCollisionEnter/Exit/Stay`, etc.) are forwarded to Udon and work as in regular Unity. **`Awake` and `Reset` are not forwarded.** See [Unity events forwarded to Udon](#unity-events-forwarded-to-udon). **[Docs]**
+
+## Unity events forwarded to Udon
+
+The official list, grouped. **[Docs]** <https://creators.vrchat.com/worlds/udon/event-execution-order/#unity-events-available-in-udon>
+
+| Group | Events |
+|---|---|
+| Lifecycle | `Start`, `Update`, `FixedUpdate`, `LateUpdate`, `OnEnable`, `OnDisable`, `OnDestroy` |
+| Physics | `OnCollisionEnter/Exit/Stay`, `OnTriggerEnter/Exit/Stay`, `OnControllerColliderHit`, `OnJointBreak`, `OnParticleCollision`, `OnParticleTrigger` |
+| Physics 2D | `OnCollisionEnter2D/Exit2D/Stay2D`, `OnTriggerEnter2D/Exit2D/Stay2D`, `OnJointBreak2D` |
+| Mouse | `OnMouseDown`, `OnMouseDrag`, `OnMouseEnter`, `OnMouseExit`, `OnMouseOver`, `OnMouseUp`, `OnMouseUpAsButton` |
+| Rendering | `OnBecameVisible`, `OnBecameInvisible`, `OnPreCull`, `OnPreRender`, `OnPostRender`, `OnRenderObject`, `OnRenderImage`, `OnWillRenderObject` |
+| Animation and audio | `OnAnimatorIK`, `OnAnimatorMove`, `OnAudioFilterRead` |
+| Transform | `OnTransformChildrenChanged`, `OnTransformParentChanged` |
+| Editor only | `OnDrawGizmos`, `OnDrawGizmosSelected`, `OnValidate`. These run in the Unity Editor (including ClientSim) but never in VRChat, because Unity doesn't send them in a built player. |
+
+- **`Awake` and `Reset` compile without error but are never called.** Use `Start` (`OnEnable` runs before `Start`). **[Docs]** The bundled U# compiler has no special handling for `Awake`, which is why there's no warning. **[Source]** (no reference to `Awake` under `Integrations/UdonSharp/` in SDK 3.10.6; `UdonBehaviour.cs` runs `_onEnable` then `_start`)
+- **Players and drones don't raise the Unity physics events.** For `OnTriggerEnter/Exit/Stay`, `OnCollisionEnter/Exit/Stay`, `OnParticleCollision` and `OnControllerColliderHit`, a player or drone touching your collider fires the `OnPlayer…` / `OnDrone…` variant *instead*, not as well. See [Player events](player-events.md). **[Docs]**
+- **Access modifiers:** Unity events are ordinary methods, so any access level works (`private void Start()` is fine). VRChat events (`Interact`, `OnPlayerJoined`, `PostLateUpdate`, …) are declared on `UdonSharpBehaviour`, so they need `public override`. **[Docs]**
 
 This page focuses on the Udon-specific virtuals. For player-trigger / collision callbacks, see [Player Events](player-events.md).
 
@@ -17,6 +36,12 @@ This page focuses on the Udon-specific virtuals. For player-trigger / collision 
 public virtual void PostLateUpdate()
 ```
 Fires after every `LateUpdate` callback in the frame, before rendering. Use this for camera follow or IK that must observe the *final* state of all transforms. **[Source]**
+
+Avatar IK solves during `LateUpdate`, so `PostLateUpdate` is where player bone and tracking positions are final for the frame. Read them here, and move objects that must follow a hand or head here, to avoid a one-frame lag. **[Docs]** <https://creators.vrchat.com/worlds/udon/event-execution-order/#postlateupdate>
+
+One thing runs later still: the [VRCBillboard](../world-components/billboard.md) pass (SDK 3.10.6+) rotates registered transforms *after* `PostLateUpdate`. Reading a billboarded transform's rotation from any Udon update event gives you last frame's value. **[Docs]**
+
+`[DefaultExecutionOrder]` orders `PostLateUpdate` along with `Update`, `LateUpdate` and `FixedUpdate`. See [Attributes](../attributes/README.md#defaultexecutionorder). **[Docs]**
 
 ---
 

@@ -4,11 +4,13 @@
 
 | Requirement | Version |
 |---|---|
-| Unity | **2022.3.22f1** (exact). This is the version VRChat uses as of SDK 3.10.5; upgrading to a different Unity version may stop uploaded content from loading. **[Docs]** <https://creators.vrchat.com/sdk/upgrade/current-unity-version/> |
+| Unity | **2022.3.22f1** (exact). This is the version VRChat uses as of SDK 3.10.6. The 3.10.6 release notes say: "This SDK version still uses Unity 2022.3! Do NOT upgrade your projects to Unity 6!" Upgrading to a different Unity version may stop uploaded content from loading. **[Docs]** <https://creators.vrchat.com/sdk/upgrade/current-unity-version/> |
 | Unity modules | *Android Build Support* and/or *iOS Build Support* if you target Quest/Android or iOS. **[Docs]** |
-| VRChat Creator Companion (VCC) | latest (2.4.5 stable, Dec 2025; 2.5.0-beta.2, Jun 2026). Windows 10/11 64-bit. **[Docs]** <https://vcc.docs.vrchat.com/news> |
-| VRChat Worlds SDK (`com.vrchat.worlds`) | latest (3.10.5 as of Sep 2026) |
+| VRChat Creator Companion (VCC) | latest (2.4.5 stable, Dec 2025; 2.5.0-beta.3, Nov 19, 2026). Windows 10/11 64-bit. **[Docs]** <https://vcc.docs.vrchat.com/news> |
+| VRChat Worlds SDK (`com.vrchat.worlds`) | latest stable: **3.10.6** (Oct 30, 2026). A **3.11.0-beta.1** (Nov 19, 2026) targets Unity 6. See below. |
 | UdonSharp | **Bundled with the Worlds SDK** since 3.4.0 — nothing separate to install. **[Docs]** <https://creators.vrchat.com/releases/release-3-4-0/> |
+
+> **Unity 6 / SDK 3.11 beta (Nov 2026).** Worlds SDK **3.11.0-beta.1** is the first SDK built for Unity **6000.0.67f1** (its VPM manifest sets `"unity": "6000.0"`). VRChat's beta upgrade guide says migrating a project to Unity 6 is "a one-way trip": back up first, and once you upload from Unity 6 you can't upload that content from 2022 again. Update the VCC before migrating, since outdated versions can't upgrade projects. Stay on 2022.3.22f1 / 3.10.6 for production until 3.11.0 ships stable. **[Docs]** (beta docs) <https://vrc-beta-docs.netlify.app/sdk/upgrade/unity-6000/> See [SDK 3.11 beta preview](../references/sdk-3-11-beta.md) for the Udon-facing changes.
 
 > **Legacy note.** Before SDK 3.4.0 (Oct 2023), UdonSharp and ClientSim were separate VCC packages (`com.vrchat.udonsharp`, `com.vrchat.clientsim`). SDK 3.4.0 merged both into the Worlds package's `Integrations` folder and lists the old IDs as `legacyPackages`, so VCC / the Resolver remove the stand-alone copies when you upgrade. Update to VCC 2.1.6+ before migrating such a project. **[Docs]** <https://creators.vrchat.com/releases/release-3-4-0/>
 >

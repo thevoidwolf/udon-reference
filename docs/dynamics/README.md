@@ -9,8 +9,8 @@ Source: <https://creators.vrchat.com/common-components/> · release notes <https
 | Page | Covers |
 |---|---|
 | [PhysBones](physbones.md) | `VRCPhysBone`, `VRCPhysBoneCollider`, `VRCPhysBoneRoot`, grab/pose events, runtime config, global colliders. |
-| [Contacts](contacts.md) | `VRCContactSender`, `VRCContactReceiver`, `OnContactEnter`/`OnContactExit`, contact proxies, tags, box shapes. |
-| [Constraints](constraints.md) | The six `VRC*Constraint` types, `Sources`, freeze-to-world, at-rest/offset values. |
+| [Contacts](contacts.md) | `VRCContactSender`, `VRCContactReceiver`, `OnContactEnter`/`OnContactExit`, contact proxies, tags, box shapes, Advanced Parameters / Material Contacts (3.10.6). |
+| [Constraints](constraints.md) | The six `VRC*Constraint` types, source methods (`GetSource`/`SetSource`/`AddSource`…, 3.10.6+), `SmoothingFactor`, freeze-to-world, at-rest/offset values. |
 
 ## Namespaces
 
@@ -39,9 +39,11 @@ The namespaces of `PhysBoneGrabbedInfo` (and the other PhysBone info structs), `
 
 | SDK | Change |
 |---|---|
-| 3.10.0 (Oct 2025) | PhysBones, Contacts and VRC Constraints arrive in worlds with Udon APIs and events. `VRCContactReceiver.UpdateContentTypes()` "take[s] an array of strings instead of an `IEnumerable` of strings", which fixes Udon Graph compile errors. This breaks U# code that passed anything other than a `string[]` (see the [discrepancy note](contacts.md#updating-content-types-and-tags)). `PermissionFilter` gains new constructors, including a parameterless default. `name` is removed from the Udon symbols. Instantiated PhysBones now simulate. The components work on `VRCPlayerObject`. In ClientSim, `OnPhysBoneGrabbed` now receives the initiating player. **[Docs]** |
+| 3.10.0 (Oct 2025) | PhysBones, Contacts and VRC Constraints arrive in worlds with Udon APIs and events. `VRCContactReceiver.UpdateContentTypes()` "take[s] an array of strings instead of an `IEnumerable` of strings", which fixes Udon Graph compile errors. This breaks U# code that passed anything other than a `string[]`. In current SDKs the `string[]` signature is on `UpdateCollisionTags`, so the note most likely named the wrong method (see [Updating content types and tags](contacts.md#updating-content-types-and-tags)). `PermissionFilter` gains new constructors, including a parameterless default. `name` is removed from the Udon symbols. Instantiated PhysBones now simulate. The components work on `VRCPlayerObject`. In ClientSim, `OnPhysBoneGrabbed` now receives the initiating player. **[Docs]** |
 | 3.10.2 (Feb 2026) | `matchingTags` added to `ContactExitInfo`. `Utilities.IsValid()` now returns accurate results for Contact Sender/Receiver proxies. PhysBone roots can be multi-edited. Fixed jitter on bones resting on colliders. Fixed exceptions when you destroy a PhysBone that parents VRC Constraints. **[Docs]** |
 | 3.10.4 (Jun 2026) | `VRCPhysBoneCollider` exposed to Udon: settable properties plus `ApplyConfigurationChanges()`. Contacts can be **box-shaped**. Avatars can mark extra PhysBone colliders as global, and those can collide with world PhysBones. **[Docs]** |
+| 3.10.6 (Oct 30, 2026) | VRC Constraints gain source methods (`SourceCount`, `GetSource`, `SetSource`, `AddSource`, `RemoveSource`, `GetSources`, `SetSources`, `ClearSources`). Udon should use them instead of editing `Sources` directly. Constraints gain `SmoothingFactor`. Contact Receivers gain Advanced Parameters and Material Contacts (avatar-focused). Proximity improved for zero-volume Receivers, thin boxes and tiny sphere Senders. PhysBones are more stable on non-uniformly scaled transforms, though that is still unsupported. **[Docs]** |
+| 3.11.0-beta.1 (Nov 2026, **beta**) | `VRCPhysBoneCollider` gains **Global Ignored Phys Bones**, so a global collider can skip specific PhysBones. World contact Receivers show the Material Contacts options in the inspector (already supported at runtime). Help buttons link to the docs. Requires Unity 6. **[Docs]** (beta notes) See [SDK 3.11 beta preview](../references/sdk-3-11-beta.md). |
 
 ## Performance and limits
 

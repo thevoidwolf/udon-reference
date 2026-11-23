@@ -29,7 +29,17 @@ public virtual void OnVideoError(VRC.SDK3.Components.Video.VideoError videoError
 
 **[Docs]** (<https://creators.vrchat.com/worlds/udon/graph/event-nodes/>)
 
-The `VideoError` enum's values are not listed in the official docs. The SDK enum is commonly seen as `Unknown`, `InvalidURL`, `AccessDenied`, `PlayerError`, `RateLimited`. **[Unverified]** Check in your IDE.
+`VRC.SDK3.Components.Video.VideoError` values, documented on the video players page since Oct 2026: **[Docs]** <https://creators.vrchat.com/worlds/udon/video-players/#handling-errors>
+
+| Value | Meaning |
+|---|---|
+| `Unknown` | Failed for a reason VRChat couldn't identify. |
+| `InvalidURL` | Malformed URL, or it doesn't point to a playable video. |
+| `AccessDenied` | The URL isn't on the allowlist and the player hasn't enabled "Allow Untrusted URLs". |
+| `PlayerError` | The video player component itself failed to play it. |
+| `RateLimited` | Hit the URL rate limit. Wait before trying again rather than retrying immediately. |
+
+The same five values are in the SDK 3.10.6 extern table. **[Source]**
 
 Common causes of `OnVideoError`: **[Docs]**
 - **Rate limit** — each user may load a new video URL only once every **5 seconds**, globally across all video players (default URLs included).

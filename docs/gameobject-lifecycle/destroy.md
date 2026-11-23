@@ -12,9 +12,9 @@ Destroy(GetComponent<AudioSource>());                 // remove a component
 
 `UnityEngine.Object.Destroy` works for any `GameObject` or `Component` you have a reference to.
 
-## `DestroyImmediate` is editor-only
+## Prefer `Destroy` over `DestroyImmediate`
 
-Use `Destroy` exclusively in U# code paths that run in the VRChat client. Whether `Object.DestroyImmediate` is exposed to Udon at all is not documented — check the SDK's Class Exposure Tree (VRChat SDK → Udon Sharp → Class Exposure Tree) for your version. **[Unverified]** In *editor* scripts, use `UdonSharpEditorUtility.DestroyImmediate()` to remove a U# behaviour together with its backing UdonBehaviour. **[Docs]**
+Use `Destroy` in U# code paths that run in the VRChat client. The official docs don't mention `Object.DestroyImmediate`. The Worlds SDK's Udon extern table does contain both overloads (`UnityEngineObject.__DestroyImmediate__UnityEngineObject__SystemVoid` and the `bool allowDestroyingAssets` variant), so it compiles. **[Source]** (`Runtime/Udon/External/VRC.Udon.Wrapper.dll`, SDK 3.10.6) How the client treats it at runtime isn't documented, and Unity itself advises against `DestroyImmediate` outside editor code. **[Unverified]** In *editor* scripts, use `UdonSharpEditorUtility.DestroyImmediate()` to remove a U# behaviour together with its backing UdonBehaviour. **[Docs]**
 
 ## What can you destroy
 

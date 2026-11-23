@@ -1,6 +1,6 @@
 # Supported Features
 
-The C# subset and Unity API surface that the U# compiler accepts. The official list is the "C# features supported" section of <https://udonsharp.docs.vrchat.com/> **[Docs]**; items tagged **[Source]** were checked against the compiler bundled in SDK 3.10.3 (`Packages/com.vrchat.worlds/Integrations/UdonSharp/Editor/Compiler/`). Anything the binder has no handler for fails with "UdonSharp does not currently support node type '…'".
+The C# subset and Unity API surface that the U# compiler accepts. The official list is the "C# features supported" section of <https://udonsharp.docs.vrchat.com/> **[Docs]**; items tagged **[Source]** were checked against the compiler bundled in SDK 3.10.3 (`Packages/com.vrchat.worlds/Integrations/UdonSharp/Editor/Compiler/`). The enum-comparison and named-argument notes were checked against 3.10.5, 3.10.6 and 3.11.0-beta.1. Anything the binder has no handler for fails with "UdonSharp does not currently support node type '…'".
 
 ## Language features
 
@@ -9,6 +9,9 @@ The C# subset and Unity API surface that the U# compiler accepts. The official l
 - `string`.
 - Single-dimensional arrays of any supported element type. Jagged arrays of supported types. **[Docs]** Arrays are the only collection type. **[Docs]** **[Community-known]** the compiler may struggle with deeply nested jagged arrays — keep them shallow. Note `GetType()` on a jagged array reports `object[]`. **[Docs]**
 - User-defined `enum`s, including `switch` over them. **[Code-confirmed]** `Tests~/TestScripts/FlowControl/SwitchTest.cs`. An enum miscompile bug affecting enums with a specific member count was fixed in **SDK 3.10.4**. **[Docs]**
+- **Enum relational comparisons (`<`, `<=`, `>`, `>=`) need SDK 3.10.6+ (your own enums) or 3.11+ (Unity/VRChat enums).** Older compilers turned every relational operator on an enum into `!=`:
+  - **User-defined enums**: up to SDK 3.10.5, `ImportedUdonSharpTypeSymbol` mapped any enum operator other than `==` to `Inequality`. So `a >= b` was `false` whenever `a == b`. Fixed in **3.10.6**. **[Source]** (`Editor/Compiler/Binder/Symbols/ImportedUdonSharpTypeSymbol.cs`, 3.10.5 vs 3.10.6) **[Docs]** <https://creators.vrchat.com/releases/release-3-10-6> **[Code-confirmed]** (`TestUserEnumComparisons` in `SwitchTest.cs`)
+  - **Extern enums** (`KeyCode`, `HumanBodyBones`, `VRC_Pickup.PickupHand`, …): through SDK **3.10.6**, the binder lowers every enum operator to `object.Equals` and negates the result for anything that isn't `op_Equality`. So `<` and the others still behave like `!=`. **[Source]** (`Editor/Compiler/Binder/BoundNodes/BoundInvocationExpression.cs`, 3.10.6) **3.11.0-beta.1** casts both sides to the underlying integer type first, and its tests add `TestExternEnumComparisons`. **[Source]** / **[Code-confirmed]** The 3.10.6 release notes don't mention this extern-enum case. If it matters, cast to `int` on any SDK: `(int)a < (int)b`.
 - Unity value types: `Vector2`, `Vector3`, `Vector4`, `Quaternion`, `Color`, `Color32`, `Bounds`, `Rect`, `Matrix4x4`, `Plane`, `Ray`, `RaycastHit`, `Touch`.
 - `System.DateTime`, `System.TimeSpan`.
 
@@ -29,7 +32,7 @@ The C# subset and Unity API surface that the U# compiler accepts. The official l
 - Default parameter values.
 - Method overloading by parameter list.
 - `params` arrays. **[Docs]**
-- Optional / named arguments. **[Source]**
+- Optional / named arguments. **[Source]** **Named arguments that skip an optional parameter need SDK 3.10.6+.** Before 3.10.6, given `void M(int a, int b = 0, int c = 0)`, the call `M(1, c: 3)` compiled as `M(1)` and silently dropped `c`. **[Docs]** <https://creators.vrchat.com/releases/release-3-10-6> The fix in `BinderSyntaxVisitor.cs` matches each named argument to its parameter by name instead of by position. New "Named args skipping defaults" assertions in `Tests~/TestScripts/Core/MethodCallsTest.cs` cover it. **[Source]** / **[Code-confirmed]**
 
 ### Operators
 - All arithmetic, comparison, logical, bitwise.

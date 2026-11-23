@@ -2,7 +2,7 @@
 
 UdonSharp ships four custom attributes plus two supporting enums. Source: `Runtime/UdonSharpAttributes.cs`. **[Source]** The VRChat Worlds SDK adds `[NetworkCallable]` (SDK 3.8.1+, namespace `VRC.SDK3.UdonNetworkCalling`). **[Docs]**
 
-Official reference: <https://creators.vrchat.com/worlds/udon/udonsharp/attributes/>. It covers `UdonSynced`, `UdonSyncMode`, `UdonBehaviourSyncMode` and `BehaviourSyncMode`, and recommends Varneon's UdonSharp Development Practices for an overview. **[Docs]** (The old `udonsharp.docs.vrchat.com/attributes` URL now returns 404.)
+Official reference: <https://creators.vrchat.com/worlds/udon/udonsharp/attributes/>. Since the Oct 30, 2026 docs update it covers all four U# attributes (`UdonSynced`, `UdonBehaviourSyncMode`, `RecursiveMethod`, `FieldChangeCallback`), `NetworkCallable`, `DefaultExecutionOrder`, and the Unity serialization and inspector attributes. It replaced the old pointer to Varneon's UdonSharp Development Practices. **[Docs]** (The old `udonsharp.docs.vrchat.com/attributes` URL now returns 404.)
 
 | Page | Symbol |
 |---|---|
@@ -25,9 +25,25 @@ Standard Unity / .NET attributes generally also work on U# fields and classes:
 | `[TextArea]` | Multi-line string field. |
 | `[ColorUsage(...)]` | Color picker config. |
 | `[AddComponentMenu("Path/Name")]` | Where this script appears in the Add Component menu. |
-| `[DefaultExecutionOrder(int)]` | Unity execution order. |
+| `[DefaultExecutionOrder(int)]` | Order of this behaviour's update events. See [below](#defaultexecutionorder). |
+| `[NonSerialized]` | Stop a public field from being serialized. **[Docs]** |
+| `[SerializeReference]` | Serialize a field by reference. Listed as supported. **[Docs]** |
+| `[OdinSerialize]` | Serialize types Unity can't (e.g. jagged arrays). Takes priority over `[NonSerialized]`. Requires Odin. **[Docs]** |
+| `[Multiline]` `[GradientUsage(...)]` | More inspector cosmetics, listed as supported. **[Docs]** |
 | `[FormerlySerializedAs("oldName")]` | Migration: pull data from a previously-named field. |
 | `[JetBrains.Annotations.PublicAPI]` | Suppress "unused" warnings; no runtime effect. |
+
+### DefaultExecutionOrder
+
+`[DefaultExecutionOrder(int)]` on a U# class sets when its `Update`, `LateUpdate`, `FixedUpdate` and `PostLateUpdate` run relative to other Udon behaviours. Everything defaults to `0`. Lower runs earlier, and negatives are allowed. **[Docs]** <https://creators.vrchat.com/worlds/udon/udonsharp/attributes/#defaultexecutionorder>
+
+- It affects **only those four update events**. `Start`, `Interact`, network events and every other event keep their normal order. **[Docs]**
+- It is **not inherited**. Put it on the concrete class you attach, not on a base class. **[Docs]**
+
+```csharp
+[DefaultExecutionOrder(-10)]   // Update runs before default-order behaviours
+public class InputPoller : UdonSharpBehaviour { }
+```
 
 `[Obsolete]` is supported but only as an editor warning — the runtime doesn't enforce it.
 

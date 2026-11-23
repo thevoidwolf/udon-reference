@@ -156,6 +156,21 @@ otherBehaviour.SetProgramVariable("counter", 42);
 int? counter = (int?)otherBehaviour.GetProgramVariable("counter");
 ```
 
+### `GetProgramVariableType`
+
+```csharp
+public Type GetProgramVariableType(string symbolName)
+```
+
+Returns the `System.Type` of the Udon variable named `symbolName`, or `null` if there isn't one. **[Source]** (`Runtime/UdonSharpBehaviour.cs`) Because it returns `null` for unknown names, it doubles as a "does this variable exist?" check before you call `Get`/`SetProgramVariable`. Check the type before `SetProgramVariable` to avoid the type-mismatch crash above. **[Docs]** <https://creators.vrchat.com/worlds/udon/graph/special-nodes/#getprogramvariabletype> (documented Oct 2026)
+
+U# itself uses it this way: the `GetComponent<T>` shims check for the hidden type-ID variable before treating a behaviour as a U# behaviour. **[Source]** (`Runtime/Libraries/CompilerInternal/GetComponentShim.cs`)
+
+```csharp
+if (other.GetProgramVariableType("counter") == typeof(int))
+    other.SetProgramVariable("counter", 42);
+```
+
 ---
 
 ## Interaction properties

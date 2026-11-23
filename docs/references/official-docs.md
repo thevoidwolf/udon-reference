@@ -1,13 +1,14 @@
 # Official Docs
 
-VRChat-published reference pages cited throughout this repo. Every URL below was checked against <https://creators.vrchat.com/> on **2026-10-22** (current Worlds SDK **3.10.5**, Unity **2022.3.22f1**). VRChat occasionally restructures the docs site — see [Note on links](#note-on-links).
+VRChat-published reference pages cited throughout this repo. Every URL below was checked against <https://creators.vrchat.com/> on **2026-10-22** and re-checked against the docs source repo (<https://github.com/vrchat-community/creator-docs>) on **2026-11-23** (current Worlds SDK **3.10.6**, Unity **2022.3.22f1**). VRChat occasionally restructures the docs site — see [Note on links](#note-on-links).
 
 ## Top-level
 
 - **Worlds → Udon overview**: <https://creators.vrchat.com/worlds/udon/>
 - **UdonSharp dedicated docs**: <https://udonsharp.docs.vrchat.com/>
 - **UdonSharp section on the creators site** (states U# "is included in the VRChat worlds SDK"): <https://creators.vrchat.com/worlds/udon/udonsharp/>
-  - Attributes: <https://creators.vrchat.com/worlds/udon/udonsharp/attributes>
+  - Attributes (expanded Oct 2026: all U# attributes, `NetworkCallable`, `DefaultExecutionOrder`, Unity attributes): <https://creators.vrchat.com/worlds/udon/udonsharp/attributes>
+  - Class Exposure Tree (moved from the old U# GitHub wiki): <https://creators.vrchat.com/worlds/udon/udonsharp/class-exposure-tree>
   - Editor scripting: <https://creators.vrchat.com/worlds/udon/udonsharp/editorscripting>
   - Performance tips: <https://creators.vrchat.com/worlds/udon/udonsharp/performance-tips>
 - **Udon Graph**: <https://creators.vrchat.com/worlds/udon/graph/>
@@ -16,16 +17,22 @@ VRChat-published reference pages cited throughout this repo. Every URL below was
 ## SDK, releases & Unity version
 
 - **Release notes (all SDK versions)**: <https://creators.vrchat.com/releases/>
-  - Current release, 3.10.5: <https://creators.vrchat.com/releases/release-3-10-5>
+  - Current release, 3.10.6 (Oct 30, 2026): <https://creators.vrchat.com/releases/release-3-10-6>
+  - Previous, 3.10.5: <https://creators.vrchat.com/releases/release-3-10-5>
   - 3.4.0 (UdonSharp and ClientSim merged into the Worlds package): <https://creators.vrchat.com/releases/release-3-4-0>
 - **Current Unity version** (2022.3.22f1 as of this check): <https://creators.vrchat.com/sdk/upgrade/current-unity-version/>
 - **Updating the SDK**: <https://creators.vrchat.com/sdk/updating-the-sdk>
 - **Build pipeline callbacks and interfaces**: <https://creators.vrchat.com/sdk/build-pipeline-callbacks-and-interfaces>
 - **Public SDK API**: <https://creators.vrchat.com/sdk/public-sdk-api>
+- **Beta docs** (SDK betas; separate site, content can change before release): <https://vrc-beta-docs.netlify.app/>
+  - 3.11.0-beta.1 release notes (Nov 18, 2026; Unity 6): <https://vrc-beta-docs.netlify.app/releases/release-3-11-0>
+  - Unity 2022 → 6000 upgrade guide: <https://vrc-beta-docs.netlify.app/sdk/upgrade/unity-6000/>
+  - Social Hooks: <https://vrc-beta-docs.netlify.app/worlds/udon/social-hooks/>
+- **SDK packages** (VPM listing; zips are on GitHub releases): <https://packages.vrchat.com/official?download> · <https://github.com/vrchat/packages/releases>
 
 ## Concepts
 
-- **Event execution order**: <https://creators.vrchat.com/worlds/udon/event-execution-order/>
+- **Event execution order** (since Oct 2026 also lists every Unity event forwarded to Udon, and says `Awake`/`Reset` aren't): <https://creators.vrchat.com/worlds/udon/event-execution-order/>
 - **Debugging Udon projects**: <https://creators.vrchat.com/worlds/udon/debugging-udon-projects>
 - **World debug views**: <https://creators.vrchat.com/worlds/udon/world-debug-views>
 - **Using Build & Test**: <https://creators.vrchat.com/worlds/udon/using-build-test>
@@ -112,8 +119,18 @@ PhysBones, Contacts and VRC Constraints are documented under *Common Components*
 
 ## Components
 
-- **VRC_Pickup**: <https://creators.vrchat.com/worlds/components/vrc_pickup>
+Since Oct 30, 2026 most component pages list the **Udon property** for each inspector field and have an *Udon API* section.
+
+- **World components index**: <https://creators.vrchat.com/worlds/components/>
+- **VRC_Pickup** (Udon property names, `Drop`, haptics): <https://creators.vrchat.com/worlds/components/vrc_pickup>
+- **VRC_Station** (`UseStation`, `ExitStation`, property names): <https://creators.vrchat.com/worlds/components/vrc_station>
+- **VRC_AvatarPedestal** (`SwitchAvatar`, `SetAvatarUse`): <https://creators.vrchat.com/worlds/components/vrc_avatarpedestal>
+- **VRC_PortalMarker** (`roomId`, `RefreshPortal`): <https://creators.vrchat.com/worlds/components/vrc_portalmarker>
+- **VRC_PlacementZone** (SDK 3.10.6+): <https://creators.vrchat.com/worlds/components/vrc_placementzone>
+- **VRC Velocity Tracker** (SDK 3.10.6+): <https://creators.vrchat.com/worlds/components/vrc_velocitytracker>
+- **VRCBillboard** (SDK 3.10.6+; lives under Udon, not Components): <https://creators.vrchat.com/worlds/udon/vrc-billboard>
 - **VRC_ObjectSync**: <https://creators.vrchat.com/worlds/components/vrc_objectsync>
+- **Allowlisted world components**: <https://creators.vrchat.com/worlds/whitelisted-world-components>
 
 ## UI / Input / Animation
 
@@ -133,7 +150,7 @@ PhysBones, Contacts and VRC Constraints are documented under *Common Components*
 
 - **AI Navigation**: <https://creators.vrchat.com/worlds/udon/ai-navigation>
 - **Udon moderation tool guidelines**: <https://creators.vrchat.com/worlds/udon/udon-moderation-tool-guidelines>
-- **Creator Economy — Udon documentation**: <https://creators.vrchat.com/economy/sdk/udon-documentation>
+- **Creator Economy — Udon documentation**: <https://creators.vrchat.com/economy/sdk/udon-documentation> (not covered by this reference. Since Oct 2026 it says to use either `OnPurchaseConfirmed` or `OnPurchaseConfirmedMultiple`, not both, and prefer the latter because only it supports Quantity Purchases.)
 
 ## Note on links
 

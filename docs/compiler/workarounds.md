@@ -120,6 +120,16 @@ bool TryDoThing(string input, out int result) {
 
 Enums with `[Flags]` are supported. Bitwise ops on `int`-backed enums work normally. Declare your enums at namespace level, not nested inside the behaviour ("Nested type declarations are not currently supported by U#"). **[Source]** If an enum `switch` or comparison misbehaves on an older SDK, update — an enum miscompile tied to specific member counts was fixed in **SDK 3.10.4**. **[Docs]**
 
+**Relational comparisons on enums** (`<`, `<=`, `>`, `>=`) compiled as `!=` for your own enums until **SDK 3.10.6**, and still do for Unity/VRChat enums through 3.10.6 (fixed in 3.11.0-beta.1). **[Source]** Cast both sides to the underlying integer type and the comparison works on every SDK:
+
+```csharp
+// Works on any SDK version.
+if ((int)player.GetPickupInHand(VRC_Pickup.PickupHand.Left).currentHand > (int)VRC_Pickup.PickupHand.None) { }
+if ((int)myState >= (int)GameState.Playing) { }
+```
+
+`==` and `!=` were never affected. See [Supported features → Types](supported-features.md#types).
+
 ## Static fields / shared state
 
 Static fields on your own types are rejected ("Static fields are not yet supported on user defined types"). **[Source]** Use `const` for compile-time constants; for state shared between behaviours, put it in instance fields on one "manager" behaviour and give others a reference to it.
@@ -173,7 +183,7 @@ All **[Community]**.
 |---|---|---|
 | "X is not exposed to Udon" | Method/field not whitelisted (e.g. `Math.PI`, certain operators) | Use the `Mathf` equivalent or a VRChat-exposed API. |
 | "Cannot use generic method X" | Generic dispatch unsupported except for whitelisted Unity types | Use the non-generic overload: `(UdonBehaviour)GetComponent(typeof(UdonBehaviour))`. |
-| "Awake unsupported, use Start" | `Awake` not exposed | Use `Start`. `OnEnable` fires before `Start`. |
+| *(no error)* `Awake` / `Reset` never runs | Udon doesn't forward `Awake` or `Reset`. U# compiles them silently. **[Docs]** | Use `Start`. `OnEnable` fires before `Start`. |
 | "Try/Catch/Finally is not supported by UdonSharp…" **[Source]** | No exception handling | Use guard clauses / early returns. |
 | "Static fields are not yet supported on user defined types" **[Source]** | `static` / `static readonly` field | Use `const` or an instance field on a shared manager behaviour. |
 | "Cannot use typeof on user-defined types" **[Source]** | `typeof(MyScript)` | Use `GetUdonTypeID<MyScript>()` / `GetComponent<MyScript>()`. |

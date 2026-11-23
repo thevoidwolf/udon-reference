@@ -23,7 +23,8 @@ The only documented argument is `maxEventsPerSecond`. **[Docs]** The full attrib
 
 All items in this section: **[Docs]**.
 
-- `public`. Not `static`, `virtual` or `override`.
+- `public`. Not `static`, generic, `virtual`, `abstract`, `override` or `sealed`. (The Oct 2026 attributes page added generic, `abstract` and `sealed` to the list.)
+- Not a built-in Udon event. You can't put `[NetworkCallable]` on `Interact`, `Start` and the like.
 - Returns `void`.
 - No member overloading. No other method on the class may share the name, including ones without the attribute.
 - At most **8** parameters, each of a [synced-variable type](https://creators.vrchat.com/worlds/udon/networking/network-details#synced-variables). No `params`, no default values.

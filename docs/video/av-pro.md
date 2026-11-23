@@ -89,7 +89,7 @@ To keep playback synchronized across players, sync the playhead and play/pause s
 public class SyncedPlayer : UdonSharpBehaviour {
     public VRCAVProVideoPlayer videoPlayer;
     [UdonSynced] VRCUrl _url;
-    [UdonSynced] float _startTime;
+    [UdonSynced] double _startTime;
     [UdonSynced] bool _playing;
 
     public void Set(VRCUrl url) {
@@ -97,7 +97,7 @@ public class SyncedPlayer : UdonSharpBehaviour {
             Networking.SetOwner(Networking.LocalPlayer, gameObject);
         _url = url;
         _playing = true;
-        _startTime = (float)((Networking.GetServerTimeInMilliseconds() % 86400000) / 1000.0);
+        _startTime = Networking.GetServerTimeInSeconds();
         videoPlayer.PlayURL(_url);
         RequestSerialization();
     }
@@ -106,6 +106,13 @@ public class SyncedPlayer : UdonSharpBehaviour {
         if (!Networking.IsOwner(gameObject) && Utilities.IsValid(_url)) {
             videoPlayer.PlayURL(_url);
         }
+    }
+
+    public override void OnVideoStart() {
+        if (Networking.IsOwner(gameObject)) return;
+        // CalculateServerDeltaTime handles server-time wrap-around.
+        double elapsed = Networking.CalculateServerDeltaTime(Networking.GetServerTimeInSeconds(), _startTime);
+        videoPlayer.SetTime((float)elapsed);
     }
 }
 ```
